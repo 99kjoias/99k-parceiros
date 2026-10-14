@@ -86,7 +86,7 @@
   $("f-entrar").onsubmit = async (e) => {
     e.preventDefault(); aviso("");
     const { error } = await sb.auth.signInWithPassword({ email: $("email").value.trim().toLowerCase(), password: $("senha").value });
-    if (error) aviso("E-mail ou senha não conferem. Se esqueceu a senha, peça um link novo.");
+    if (error) aviso(error.status === 429 ? "Muitas tentativas seguidas. Espere um minuto e tente de novo." : "E-mail ou senha não conferem. Confira se o navegador não preencheu uma senha antiga. Se esqueceu, clique em Esqueci minha senha.");
     else seguir();
   };
 
@@ -94,7 +94,7 @@
     e.preventDefault();
     const destino = location.origin + location.pathname;
     const { error } = await sb.auth.resetPasswordForEmail($("email2").value.trim().toLowerCase(), { redirectTo: destino });
-    if (error) aviso("Não foi possível enviar o link agora. Tente de novo em alguns minutos.");
+    if (error) aviso(error.status === 429 ? "Você acabou de pedir um link. Espere um minuto e confira a caixa de entrada e o spam." : "Não foi possível enviar o link agora. Tente de novo em alguns minutos.");
     else aviso("Se esse e-mail estiver cadastrado, o link chega em instantes. Confira também o spam.", "ok");
   };
 
@@ -103,7 +103,19 @@
     if ($("nova").value.length < 8) return aviso("A senha precisa de pelo menos 8 caracteres.");
     if ($("nova").value !== $("nova2").value) return aviso("As senhas não são iguais.");
     const { error } = await sb.auth.updateUser({ password: $("nova").value });
-    if (error) return aviso("O link expirou. Peça um link novo em Esqueci minha senha.");
+    if (error) {
+      const codigo = error.code || "";
+      if (codigo === "same_password") {
+        // A senha digitada já é a senha atual: segue para o painel
+        recuperando = false;
+        history.replaceState(null, "", location.pathname);
+        aviso("Essa já é a sua senha atual. Entrando...", "ok");
+        return seguir();
+      }
+      if (codigo === "weak_password") return aviso("Senha fraca. Use pelo menos 8 caracteres, misturando letras e números.");
+      if (/session|jwt|expired|missing/i.test(codigo + " " + error.message)) return aviso("O link expirou. Peça um link novo em Esqueci minha senha.");
+      return aviso("Não foi possível salvar a senha agora. Tente de novo em instantes.");
+    }
     recuperando = false;
     history.replaceState(null, "", location.pathname);
     aviso("Senha salva.", "ok");
