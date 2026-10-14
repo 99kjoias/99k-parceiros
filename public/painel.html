@@ -22,6 +22,15 @@
   .estado-cadastro { max-width: 560px; }
   .ao-vivo { font-size: .825rem; color: var(--cinza); display: inline-flex; align-items: center; gap: 6px; }
   .ao-vivo::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #2f9e6b; }
+  .minha-posicao { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; background: var(--verde-fundo); color: #fff; border-radius: var(--raio); padding: 16px 20px; margin-bottom: 18px; }
+  .minha-posicao strong { font-size: clamp(2rem, 6vw, 2.6rem); font-weight: 800; color: var(--ouro); line-height: 1; }
+  .minha-posicao span { color: #d7e3de; }
+  td.pos { font-weight: 800; font-size: 1.05rem; width: 56px; }
+  tr.top1 td.pos { color: #b08a2e; } tr.top2 td.pos { color: #7d8790; } tr.top3 td.pos { color: #a0643a; }
+  tr.eu td { background: var(--ouro-claro); font-weight: 600; }
+  .ordem { display: inline-flex; border: 1px solid var(--linha); border-radius: 999px; overflow: hidden; }
+  .ordem button { font: inherit; font-size: .875rem; border: 0; background: var(--papel); color: var(--cinza); padding: 8px 14px; cursor: pointer; }
+  .ordem button[aria-pressed="true"] { background: var(--verde); color: #fff; }
 </style>
 </head>
 <body>
@@ -51,6 +60,30 @@
       </div>
     </div>
 
+    <nav class="abas" role="tablist">
+      <button role="tab" type="button" data-aba="meu" aria-selected="true">Meu desempenho</button>
+      <button role="tab" type="button" data-aba="ranking" aria-selected="false">Ranking</button>
+    </nav>
+
+    <div id="aba-ranking" class="hidden">
+      <div class="barra-acoes">
+        <div class="campo"><label for="mes-rank" class="sr">Mês</label><select id="mes-rank"></select></div>
+        <div class="ordem" role="group" aria-label="Ordenar por">
+          <button type="button" data-ordem="valor" aria-pressed="true">Valor vendido</button>
+          <button type="button" data-ordem="pedidos" aria-pressed="false">Número de vendas</button>
+        </div>
+      </div>
+      <div class="minha-posicao" id="minha-posicao"></div>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Afiliado</th><th class="num">Vendas</th><th class="num">Valor vendido</th></tr></thead>
+          <tbody id="ranking"></tbody>
+        </table>
+      </div>
+      <p class="small muted" style="margin-top:8px">Conta só pedidos pagos com cupom de afiliado. Atualiza sozinho a cada poucos minutos.</p>
+    </div>
+
+    <div id="aba-meu">
     <div class="barra-acoes">
       <div class="campo">
         <label for="mes" class="sr">Mês</label>
@@ -85,6 +118,7 @@
         </table>
       </div>
     </section>
+    </div>
   </div>
 </main>
 
@@ -133,6 +167,20 @@
 
     ultimosMeses(12).forEach((m) => { const o = document.createElement("option"); o.value = m; o.textContent = rotuloMes(m); $("mes").appendChild(o); });
     $("mes").onchange = carregarMes;
+    ultimosMeses(12).forEach((m) => { const o = document.createElement("option"); o.value = m; o.textContent = rotuloMes(m); $("mes-rank").appendChild(o); });
+    $("mes-rank").onchange = carregarRanking;
+    document.querySelectorAll(".abas button").forEach((b) => b.onclick = () => {
+      document.querySelectorAll(".abas button").forEach((x) => x.setAttribute("aria-selected", x === b));
+      $("aba-meu").classList.toggle("hidden", b.dataset.aba !== "meu");
+      $("aba-ranking").classList.toggle("hidden", b.dataset.aba !== "ranking");
+      if (b.dataset.aba === "ranking") carregarRanking();
+    });
+    document.querySelectorAll(".ordem button").forEach((b) => b.onclick = () => {
+      ordem = b.dataset.ordem;
+      document.querySelectorAll(".ordem button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+      desenharRanking();
+    });
+    setInterval(() => { if (!$("aba-ranking").classList.contains("hidden")) carregarRanking(); }, 180000);
     $("painel").classList.remove("hidden");
     await Promise.all([carregarMes(), carregarFechamentos()]);
 
@@ -177,6 +225,37 @@
         <td class="num">${brl.format(v.valor_base)}</td>
         <td class="num">${brl.format(v.comissao_valor)}</td>
         <td><span class="etiqueta et-${v.situacao}">${v.situacao === "cancelada" ? "Cancelado" : "Confirmado"}</span></td>
+      </tr>`).join("");
+  }
+
+  // Ranking geral do mês
+  let ranking = [], ordem = "valor";
+  async function carregarRanking() {
+    const mes = $("mes-rank").value || mesAtual();
+    const { data, error } = await sb.rpc("ranking_afiliados", { p_mes: mes });
+    if (error) { $("ranking").innerHTML = `<tr><td colspan="4" class="vazio">O ranking não carregou agora. Tente de novo em instantes.</td></tr>`; return; }
+    ranking = data || [];
+    desenharRanking();
+  }
+  function desenharRanking() {
+    const mesAt = ($("mes-rank").value || mesAtual()) === mesAtual();
+    const lista = ranking.slice().sort((a, b) => ordem === "valor"
+      ? (b.valor_vendido - a.valor_vendido) || (b.pedidos - a.pedidos)
+      : (b.pedidos - a.pedidos) || (b.valor_vendido - a.valor_vendido));
+    let pos = 0, ant = null;
+    lista.forEach((r, i) => { const chave = ordem === "valor" ? r.valor_vendido : r.pedidos; if (chave !== ant) pos = i + 1; r.pos = pos; ant = chave; });
+    const meu = lista.find((r) => r.sou_eu);
+    $("minha-posicao").innerHTML = meu
+      ? `<strong>${meu.pos}º</strong><span>lugar de ${lista.length} ${lista.length === 1 ? "afiliado" : "afiliados"} ${mesAt ? "neste mês" : "no mês"}</span>`
+      : `<span>${mesAt ? "Você ainda não vendeu neste mês. A primeira venda já te coloca no ranking." : "Você não vendeu neste mês."}</span>`;
+    const tb = $("ranking");
+    if (!lista.length) { tb.innerHTML = `<tr><td colspan="4" class="vazio">Ninguém vendeu neste mês ainda.</td></tr>`; return; }
+    tb.innerHTML = lista.map((r) => `
+      <tr class="${r.pos <= 3 ? "top" + r.pos : ""} ${r.sou_eu ? "eu" : ""}">
+        <td class="pos">${r.pos}º</td>
+        <td>${r.sou_eu ? "Você" : "@" + esc(r.instagram)}</td>
+        <td class="num">${r.pedidos}</td>
+        <td class="num">${brl.format(r.valor_vendido)}</td>
       </tr>`).join("");
   }
 
