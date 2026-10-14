@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lojista | Parceiros 99K</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,600;6..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .titulo { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+  .titulo h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); margin: 0; }
+  .detalhe { background: #fafbf9; }
+  .detalhe dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; font-size: .9rem; }
+  .detalhe dt { color: var(--cinza); }
+  .detalhe dd { margin: 0; overflow-wrap: anywhere; }
+  .acoes-linha { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .ig { font-weight: 600; }
+  .form-camp { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0 14px; }
+  @media (max-width: 640px) { .form-camp { grid-template-columns: 1fr 1fr; } .form-camp .campo:first-child { grid-column: 1 / -1; } }
+  .checks { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+  .checks label { display: flex; gap: 8px; align-items: center; }
+  .checks input { width: 18px; height: 18px; accent-color: var(--verde); }
+  button.link { background: none; border: 0; padding: 0; color: var(--verde); font: inherit; cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="topo-in">
+    <a class="marca" href="admin.html">99K <span>Parceiros</span></a>
+    <button class="link-topo" id="sair" type="button">Sair</button>
+  </div>
+</header>
+
+<main class="pagina">
+  <p id="carregando" class="muted">Carregando...</p>
+  <div id="sem-acesso" class="caixa hidden"><h1 style="font-size:2rem">Acesso de lojista</h1><p>Este login não tem acesso ao painel de lojista.</p><a class="btn btn-linha" href="painel.html">Ir para o painel de parceira</a></div>
+
+  <div id="app" class="hidden">
+    <div class="titulo"><h1>Painel do lojista</h1><span class="small muted" id="atualizado"></span></div>
+
+    <nav class="abas" role="tablist">
+      <button role="tab" data-aba="cadastros" aria-selected="true">Cadastros <span class="contador hidden" id="c-pend"></span></button>
+      <button role="tab" data-aba="parceiras" aria-selected="false">Parceiras</button>
+      <button role="tab" data-aba="vendas" aria-selected="false">Vendas</button>
+      <button role="tab" data-aba="fechamentos" aria-selected="false">Fechamentos</button>
+      <button role="tab" data-aba="campanhas" aria-selected="false">Campanhas</button>
+      <button role="tab" data-aba="colecoes" aria-selected="false">Coleções</button>
+    </nav>
+
+    <!-- Cadastros para moderar -->
+    <section data-painel="cadastros">
+      <div class="fila" id="fila"></div>
+    </section>
+
+    <!-- Parceiras -->
+    <section data-painel="parceiras" class="hidden">
+      <div class="barra-acoes">
+        <div class="campo"><label for="filtro-status" class="sr">Situação</label>
+          <select id="filtro-status"><option value="aprovada">Ativas</option><option value="encerrada">Encerradas</option><option value="recusada">Recusadas</option><option value="">Todas</option></select>
+        </div>
+        <span class="small muted">Vendas e comissão do mês atual</span>
+      </div>
+      <div class="tabela-wrap"><table>
+        <thead><tr><th>Parceira</th><th>Cupom</th><th>Campanha</th><th class="num">Pedidos</th><th class="num">Vendas</th><th class="num">Comissão</th><th></th></tr></thead>
+        <tbody id="t-parceiras"></tbody>
+      </table></div>
+    </section>
+
+    <!-- Vendas do mês -->
+    <section data-painel="vendas" class="hidden">
+      <div class="barra-acoes">
+        <div class="campo"><label for="mes-vendas" class="sr">Mês</label><select id="mes-vendas"></select></div>
+      </div>
+      <div class="numeros">
+        <div class="numero destaque"><div class="rotulo">Comissão do mês</div><div class="valor" id="v-comissao">R$ 0,00</div></div>
+        <div class="numero"><div class="rotulo">Vendas com cupom</div><div class="valor" id="v-vendas">R$ 0,00</div></div>
+        <div class="numero"><div class="rotulo">Pedidos</div><div class="valor" id="v-pedidos">0</div></div>
+      </div>
+      <h2>Por parceira</h2>
+      <div class="tabela-wrap" style="margin-bottom:28px"><table>
+        <thead><tr><th>Parceira</th><th>Cupom</th><th class="num">Pedidos</th><th class="num">Vendas</th><th class="num">Comissão</th></tr></thead>
+        <tbody id="t-ranking"></tbody>
+      </table></div>
+      <h2>Pedidos</h2>
+      <div class="tabela-wrap"><table>
+        <thead><tr><th>Data</th><th>Pedido</th><th>Cupom</th><th class="num">Valor pago</th><th class="num">Comissão</th><th>Situação</th></tr></thead>
+        <tbody id="t-vendas"></tbody>
+      </table></div>
+    </section>
+
+    <!-- Fechamentos -->
+    <section data-painel="fechamentos" class="hidden">
+      <div class="barra-acoes">
+        <div class="campo"><label for="mes-fech" class="sr">Mês</label><select id="mes-fech"></select></div>
+        <span class="small muted" id="fech-total"></span>
+      </div>
+      <div class="tabela-wrap"><table>
+        <thead><tr><th>Parceira</th><th>Chave Pix</th><th class="num">Pedidos</th><th class="num">Comissão</th><th class="num">Ajustes</th><th class="num">A pagar</th><th>Pagamento</th></tr></thead>
+        <tbody id="t-fech"></tbody>
+      </table></div>
+      <p class="small muted" style="margin-top:8px">O mês fecha sozinho no último dia, à meia-noite de Brasília. O sistema só mostra os valores: o Pix é feito por vocês, e depois é só marcar como pago.</p>
+    </section>
+
+    <!-- Campanhas -->
+    <section data-painel="campanhas" class="hidden">
+      <div class="tabela-wrap" style="margin-bottom:24px"><table>
+        <thead><tr><th>Campanha</th><th class="num">Desconto do cupom</th><th class="num">Comissão</th><th class="num">Parceiras</th><th>Situação</th><th></th></tr></thead>
+        <tbody id="t-camp"></tbody>
+      </table></div>
+      <form class="caixa" id="f-camp">
+        <h2 id="f-camp-titulo">Nova campanha</h2>
+        <input type="hidden" id="camp-id">
+        <div class="form-camp">
+          <div class="campo"><label for="camp-nome">Nome</label><input id="camp-nome" required placeholder="Ex.: Parceiras padrão"></div>
+          <div class="campo"><label for="camp-desc">Desconto (%)</label><input id="camp-desc" type="number" min="0" max="100" step="0.5" required></div>
+          <div class="campo"><label for="camp-com">Comissão (%)</label><input id="camp-com" type="number" min="0" max="100" step="0.5" required></div>
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" id="camp-padrao"> Campanha padrão na aprovação</label>
+          <label><input type="checkbox" id="camp-ativa" checked> Ativa</label>
+        </div>
+        <p class="small muted">Mudar o desconto atualiza na hora os cupons das parceiras dessa campanha no site. Mudar a comissão vale para as vendas novas.</p>
+        <div class="acoes-linha">
+          <button class="btn btn-primario" type="submit" id="camp-salvar">Salvar campanha</button>
+          <button class="btn btn-linha hidden" type="button" id="camp-cancelar">Cancelar edição</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Coleções -->
+    <section data-painel="colecoes" class="hidden">
+      <p class="muted">As coleções vêm da Shopify sozinhas. Escolha quais aparecem no campo "coleção preferida" do cadastro.</p>
+      <div class="tabela-wrap"><table>
+        <thead><tr><th>Coleção</th><th>No cadastro</th></tr></thead>
+        <tbody id="t-col"></tbody>
+      </table></div>
+    </section>
+  </div>
+</main>
+
+<dialog id="dlg">
+  <form class="caixa" method="dialog" id="dlg-form">
+    <h2 id="dlg-titulo"></h2>
+    <div id="dlg-corpo"></div>
+    <div class="acoes-linha">
+      <button class="btn btn-primario" id="dlg-ok" value="ok">Confirmar</button>
+      <button class="btn btn-linha" value="cancelar" formnovalidate>Cancelar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const { sb, brl, dataCurta, dataHora, mesAtual, ultimosMeses, rotuloMes, esc, toast, chamar } = window.P;
+  const $ = (id) => document.getElementById(id);
+  const S = { parceiros: [], cupons: [], campanhas: [], vendasMes: [] };
+  const pct = (n) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
+  const nomeStatus = { pendente: "Em análise", aprovada: "Ativa", recusada: "Recusada", encerrada: "Encerrada" };
+
+  $("sair").onclick = async () => { await sb.auth.signOut(); location.href = "entrar.html"; };
+
+  // Abas
+  document.querySelectorAll(".abas button").forEach((b) => b.onclick = () => abrirAba(b.dataset.aba));
+  function abrirAba(nome) {
+    document.querySelectorAll(".abas button").forEach((b) => b.setAttribute("aria-selected", b.dataset.aba === nome));
+    document.querySelectorAll("[data-painel]").forEach((s) => s.classList.toggle("hidden", s.dataset.painel !== nome));
+  }
+
+  // Confirmação com caixa de diálogo
+  function perguntar(titulo, corpoHtml, textoOk, perigo) {
+    return new Promise((ok) => {
+      $("dlg-titulo").textContent = titulo; $("dlg-corpo").innerHTML = corpoHtml;
+      $("dlg-ok").textContent = textoOk || "Confirmar";
+      $("dlg-ok").className = "btn " + (perigo ? "btn-perigo" : "btn-primario");
+      const d = $("dlg");
+      d.onclose = () => ok(d.returnValue === "ok" ? d : null);
+      d.returnValue = ""; d.showModal();
+    });
+  }
+
+  async function acao(corpo, msgOk, btn) {
+    if (btn) btn.disabled = true;
+    try { const r = await chamar("admin", corpo); toast(msgOk); await carregarTudo(); return r; }
+    catch (e) { toast(e.message, true); }
+    finally { if (btn) btn.disabled = false; }
+  }
+
+  async function iniciar() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { location.href = "entrar.html"; return; }
+    const { data: admin } = await sb.rpc("is_admin");
+    $("carregando").classList.add("hidden");
+    if (!admin) { $("sem-acesso").classList.remove("hidden"); return; }
+    $("app").classList.remove("hidden");
+    ultimosMeses(12).forEach((m) => {
+      ["mes-vendas", "mes-fech"].forEach((id) => { const o = document.createElement("option"); o.value = m; o.textContent = rotuloMes(m); $(id).appendChild(o); });
+    });
+    // Fechamentos: começa no mês passado (o que está para pagar)
+    if ($("mes-fech").options[1]) $("mes-fech").selectedIndex = 1;
+    $("mes-vendas").onchange = carregarVendas;
+    $("mes-fech").onchange = carregarFechamentos;
+    $("filtro-status").onchange = desenharParceiras;
+    await carregarTudo();
+    sb.channel("adm").on("postgres_changes", { event: "*", schema: "public", table: "vendas" }, carregarVendas)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "parceiros" }, carregarTudo).subscribe();
+  }
+
+  async function carregarTudo() {
+    const [p, c, k] = await Promise.all([
+      sb.from("parceiros").select("*").order("criado_em", { ascending: false }),
+      sb.from("cupons").select("*").order("criado_em", { ascending: false }),
+      sb.from("campanhas").select("*").order("criado_em"),
+    ]);
+    S.parceiros = p.data || []; S.cupons = c.data || []; S.campanhas = k.data || [];
+    await carregarVendas(true);
+    desenharFila(); desenharParceiras(); desenharCampanhas(); carregarFechamentos(); carregarColecoes();
+    $("atualizado").textContent = "Atualizado às " + dataHora.format(new Date()).split(" ")[1];
+  }
+
+  const cupomDe = (id) => S.cupons.find((c) => c.parceiro_id === id);
+  const campanha = (id) => S.campanhas.find((c) => c.id === id);
+  const parceira = (id) => S.parceiros.find((p) => p.id === id);
+  function opcoesCampanha(sel) {
+    return S.campanhas.filter((c) => c.ativa).map((c) => `<option value="${c.id}" ${c.id === sel || (!sel && c.padrao) ? "selected" : ""}>${esc(c.nome)} (${pct(c.desconto_pct)} / ${pct(c.comissao_pct)})</option>`).join("");
+  }
+  function dadosHtml(p) {
+    const end = `${esc(p.rua)}, ${esc(p.numero)}${p.complemento ? " " + esc(p.complemento) : ""}, ${esc(p.bairro)}, ${esc(p.cidade)}/${esc(p.estado)}, CEP ${esc(p.cep)}`;
+    return `<dl>
+      <dt>Instagram</dt><dd><a class="ig" href="https://instagram.com/${encodeURIComponent(p.instagram)}" target="_blank" rel="noopener">@${esc(p.instagram)}</a></dd>
+      <dt>E-mail</dt><dd>${esc(p.email)}</dd>
+      <dt>WhatsApp</dt><dd><a href="https://wa.me/55${esc(p.whatsapp)}" target="_blank" rel="noopener">${esc(p.whatsapp)}</a></dd>
+      <dt>CPF</dt><dd>${esc(p.cpf)}</dd>
+      <dt>Endereço</dt><dd>${end}</dd>
+      <dt>Chave Pix</dt><dd>${esc(p.chave_pix)}</dd>
+      <dt>Coleção</dt><dd>${esc(p.colecao_preferida || "Não escolheu")}</dd>
+      <dt>Cadastro</dt><dd>${dataHora.format(new Date(p.criado_em))}</dd>
+    </dl>`;
+  }
+
+  // Fila de moderação
+  function desenharFila() {
+    const pend = S.parceiros.filter((p) => p.status === "pendente").sort((a, b) => a.criado_em.localeCompare(b.criado_em));
+    $("c-pend").textContent = pend.length; $("c-pend").classList.toggle("hidden", !pend.length);
+    if (!pend.length) { $("fila").innerHTML = `<div class="caixa vazio">Nenhum cadastro esperando análise.</div>`; return; }
+    if (!S.campanhas.some((c) => c.ativa)) {
+      $("fila").innerHTML = `<div class="aviso aviso-info">Crie uma campanha na aba Campanhas antes de aprovar cadastros.</div>`;
+    } else $("fila").innerHTML = "";
+    $("fila").insertAdjacentHTML("beforeend", pend.map((p) => `
+      <article class="cartao" data-id="${p.id}">
+        <div class="cartao-topo"><h3 style="margin:0">${esc(p.nome)}</h3><span class="small muted">Código pedido: <strong>${esc(p.codigo_desejado)}</strong></span></div>
+        ${dadosHtml(p)}
+        <div class="acoes">
+          <div class="campo"><label>Campanha</label><select class="sel-camp">${opcoesCampanha()}</select></div>
+          <div class="campo"><label>Código do cupom</label><input class="inp-cod" value="${esc(p.codigo_desejado)}" maxlength="20"></div>
+          <button class="btn btn-primario btn-aprovar" type="button">Aprovar</button>
+          <button class="btn btn-perigo btn-recusar" type="button">Recusar</button>
+        </div>
+      </article>`).join(""));
+    $("fila").querySelectorAll(".cartao").forEach((card) => {
+      const id = card.dataset.id;
+      card.querySelector(".inp-cod").oninput = (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20); };
+      card.querySelector(".btn-aprovar").onclick = (e) => acao({ acao: "aprovar", parceiro_id: id, campanha_id: card.querySelector(".sel-camp").value, codigo: card.querySelector(".inp-cod").value }, "Aprovada. O cupom já vale no site.", e.target);
+      card.querySelector(".btn-recusar").onclick = async (e) => {
+        const p = parceira(id);
+        if (await perguntar("Recusar cadastro", `<p>Recusar o cadastro de <strong>${esc(p.nome)}</strong>? Ela recebe um e-mail curto, sem motivo.</p>`, "Recusar", true))
+          acao({ acao: "recusar", parceiro_id: id }, "Cadastro recusado.", e.target);
+      };
+    });
+  }
+
+  // Parceiras
+  function desenharParceiras() {
+    const f = $("filtro-status").value;
+    const lista = S.parceiros.filter((p) => p.status !== "pendente" && (!f || p.status === f));
+    const mesAt = mesAtual();
+    const doMes = S.vendasMes.filter((v) => v.mes_ref === mesAt && v.situacao === "valida");
+    const tb = $("t-parceiras");
+    if (!lista.length) { tb.innerHTML = `<tr><td colspan="7" class="vazio">Nenhuma parceira aqui ainda.</td></tr>`; return; }
+    tb.innerHTML = lista.map((p) => {
+      const cp = cupomDe(p.id), cam = campanha(p.campanha_id);
+      const vs = doMes.filter((v) => v.parceiro_id === p.id);
+      const soma = (k) => vs.reduce((s, v) => s + Number(v[k]), 0);
+      return `<tr data-id="${p.id}">
+        <td><button class="link ver" type="button">${esc(p.nome)}</button><br><span class="small muted">@${esc(p.instagram)}</span></td>
+        <td>${cp ? `<strong>${esc(cp.codigo)}</strong><br><span class="etiqueta et-${cp.status}">${cp.status === "ativo" ? "Ativo" : cp.status === "pausado" ? "Pausado" : "Encerrado"}</span>` : "-"}</td>
+        <td>${cam ? esc(cam.nome) : "-"}</td>
+        <td class="num">${vs.length}</td><td class="num">${brl.format(soma("valor_base"))}</td><td class="num">${brl.format(soma("comissao_valor"))}</td>
+        <td><span class="etiqueta et-${p.status}">${nomeStatus[p.status]}</span></td>
+      </tr>
+      <tr class="detalhe hidden" data-det="${p.id}"><td colspan="7">${dadosHtml(p)}
+        ${p.status === "aprovada" ? `<div class="acoes-linha">
+          <div class="campo" style="margin:0;min-width:220px"><label class="sr">Campanha</label><select class="sel-camp">${opcoesCampanha(p.campanha_id)}</select></div>
+          <button class="btn btn-linha btn-peq btn-mover" type="button">Mudar campanha</button>
+          ${cp && cp.status === "ativo" ? `<button class="btn btn-linha btn-peq btn-pausar" type="button">Pausar cupom</button>` : ""}
+          ${cp && cp.status === "pausado" ? `<button class="btn btn-linha btn-peq btn-reativar" type="button">Reativar cupom</button>` : ""}
+          <button class="btn btn-perigo btn-peq btn-encerrar" type="button">Encerrar parceria</button>
+        </div>` : ""}
+      </td></tr>`;
+    }).join("");
+    tb.querySelectorAll("tr[data-id]").forEach((tr) => {
+      const id = tr.dataset.id, det = tb.querySelector(`tr[data-det="${id}"]`);
+      tr.querySelector(".ver").onclick = () => det.classList.toggle("hidden");
+      det.querySelector(".btn-mover")?.addEventListener("click", (e) => acao({ acao: "mudar_campanha", parceiro_id: id, campanha_id: det.querySelector(".sel-camp").value }, "Campanha alterada. O cupom no site já foi atualizado.", e.target));
+      det.querySelector(".btn-pausar")?.addEventListener("click", (e) => acao({ acao: "pausar_cupom", parceiro_id: id }, "Cupom pausado no site.", e.target));
+      det.querySelector(".btn-reativar")?.addEventListener("click", (e) => acao({ acao: "reativar_cupom", parceiro_id: id }, "Cupom reativado no site.", e.target));
+      det.querySelector(".btn-encerrar")?.addEventListener("click", async (e) => {
+        if (await perguntar("Encerrar parceria", `<p>O cupom de <strong>${esc(parceira(id).nome)}</strong> deixa de valer no site agora. As vendas e os fechamentos dela continuam guardados.</p>`, "Encerrar", true))
+          acao({ acao: "encerrar", parceiro_id: id }, "Parceria encerrada e cupom desativado.", e.target);
+      });
+    });
+  }
+
+  // Vendas do mês
+  async function carregarVendas(silencioso) {
+    const mes = $("mes-vendas").value || mesAtual();
+    const meses = Array.from(new Set([mes, mesAtual()]));
+    const { data } = await sb.from("vendas").select("parceiro_id,cupom_codigo,pedido_numero,data_pedido,valor_base,comissao_valor,situacao,mes_ref").in("mes_ref", meses).order("data_pedido", { ascending: false });
+    S.vendasMes = data || [];
+    const doMes = S.vendasMes.filter((v) => v.mes_ref === mes);
+    const val = doMes.filter((v) => v.situacao === "valida");
+    const soma = (arr, k) => arr.reduce((s, v) => s + Number(v[k]), 0);
+    $("v-comissao").textContent = brl.format(soma(val, "comissao_valor"));
+    $("v-vendas").textContent = brl.format(soma(val, "valor_base"));
+    $("v-pedidos").textContent = val.length;
+    const porP = {};
+    val.forEach((v) => { (porP[v.parceiro_id] ||= []).push(v); });
+    const rank = Object.entries(porP).sort((a, b) => soma(b[1], "valor_base") - soma(a[1], "valor_base"));
+    $("t-ranking").innerHTML = rank.length ? rank.map(([pid, vs]) => `<tr><td>${esc(parceira(pid)?.nome || "-")}</td><td>${esc(vs[0].cupom_codigo)}</td><td class="num">${vs.length}</td><td class="num">${brl.format(soma(vs, "valor_base"))}</td><td class="num">${brl.format(soma(vs, "comissao_valor"))}</td></tr>`).join("")
+      : `<tr><td colspan="5" class="vazio">Nenhuma venda com cupom de parceira neste mês.</td></tr>`;
+    $("t-vendas").innerHTML = doMes.length ? doMes.map((v) => `<tr class="${v.situacao === "cancelada" ? "cancelada" : ""}"><td>${dataHora.format(new Date(v.data_pedido))}</td><td>${esc(v.pedido_numero)}</td><td>${esc(v.cupom_codigo)}</td><td class="num">${brl.format(v.valor_base)}</td><td class="num">${brl.format(v.comissao_valor)}</td><td><span class="etiqueta et-${v.situacao}">${v.situacao === "cancelada" ? "Cancelado" : "Confirmado"}</span></td></tr>`).join("")
+      : `<tr><td colspan="6" class="vazio">Nenhum pedido neste mês.</td></tr>`;
+    if (silencioso !== true) desenharParceiras();
+  }
+
+  // Fechamentos
+  async function carregarFechamentos() {
+    const mes = $("mes-fech").value;
+    const { data } = await sb.from("fechamentos").select("*").eq("mes_ref", mes).order("comissao_total", { ascending: false });
+    const tb = $("t-fech");
+    const lista = data || [];
+    const aPagar = lista.filter((f) => !f.pago).reduce((s, f) => s + Number(f.comissao_total), 0);
+    $("fech-total").textContent = lista.length ? `Falta pagar: ${brl.format(aPagar)}` : "";
+    if (!lista.length) {
+      tb.innerHTML = `<tr><td colspan="7" class="vazio">${mes === mesAtual() ? "Este mês ainda está aberto. Ele fecha no último dia." : "Nenhum fechamento neste mês."}</td></tr>`; return;
+    }
+    tb.innerHTML = lista.map((f) => { const p = parceira(f.parceiro_id) || {}; return `<tr>
+      <td>${esc(p.nome || "-")}</td>
+      <td>${esc(p.chave_pix || "-")} ${p.chave_pix ? `<button class="link copiar-pix" data-pix="${esc(p.chave_pix)}" type="button">copiar</button>` : ""}</td>
+      <td class="num">${f.qtd_pedidos}</td><td class="num">${brl.format(f.comissao_vendas)}</td><td class="num">${Number(f.ajustes) ? brl.format(f.ajustes) : "-"}</td>
+      <td class="num"><strong>${brl.format(f.comissao_total)}</strong></td>
+      <td>${f.pago ? `<span class="etiqueta et-pago">Pago em ${dataCurta.format(new Date(f.pago_em))}</span> <button class="link desmarcar" data-id="${f.id}" type="button">desfazer</button>`
+        : `<button class="btn btn-primario btn-peq marcar" data-id="${f.id}" type="button">Marcar como pago</button>`}</td></tr>`; }).join("");
+    tb.querySelectorAll(".copiar-pix").forEach((b) => b.onclick = async () => { await navigator.clipboard.writeText(b.dataset.pix); toast("Chave Pix copiada."); });
+    tb.querySelectorAll(".marcar").forEach((b) => b.onclick = () => acao({ acao: "marcar_pago", fechamento_id: b.dataset.id, pago: true }, "Marcado como pago.", b));
+    tb.querySelectorAll(".desmarcar").forEach((b) => b.onclick = () => acao({ acao: "marcar_pago", fechamento_id: b.dataset.id, pago: false }, "Pagamento desmarcado.", b));
+  }
+
+  // Campanhas
+  function desenharCampanhas() {
+    const tb = $("t-camp");
+    if (!S.campanhas.length) { tb.innerHTML = `<tr><td colspan="6" class="vazio">Nenhuma campanha ainda. Crie a primeira abaixo.</td></tr>`; }
+    else tb.innerHTML = S.campanhas.map((c) => `<tr>
+      <td><strong>${esc(c.nome)}</strong>${c.padrao ? ' <span class="etiqueta et-pendente">Padrão</span>' : ""}</td>
+      <td class="num">${pct(c.desconto_pct)}</td><td class="num">${pct(c.comissao_pct)}</td>
+      <td class="num">${S.parceiros.filter((p) => p.campanha_id === c.id && p.status === "aprovada").length}</td>
+      <td><span class="etiqueta et-${c.ativa ? "ativo" : "encerrado"}">${c.ativa ? "Ativa" : "Inativa"}</span></td>
+      <td><button class="link editar" data-id="${c.id}" type="button">Editar</button></td></tr>`).join("");
+    tb.querySelectorAll(".editar").forEach((b) => b.onclick = () => {
+      const c = campanha(b.dataset.id);
+      $("camp-id").value = c.id; $("camp-nome").value = c.nome; $("camp-desc").value = c.desconto_pct; $("camp-com").value = c.comissao_pct;
+      $("camp-padrao").checked = c.padrao; $("camp-ativa").checked = c.ativa;
+      $("f-camp-titulo").textContent = "Editar campanha"; $("camp-cancelar").classList.remove("hidden");
+      $("f-camp").scrollIntoView({ behavior: "smooth" });
+    });
+  }
+  function limparCampanha() {
+    $("f-camp").reset(); $("camp-id").value = ""; $("camp-ativa").checked = true;
+    $("f-camp-titulo").textContent = "Nova campanha"; $("camp-cancelar").classList.add("hidden");
+  }
+  $("camp-cancelar").onclick = limparCampanha;
+  $("f-camp").onsubmit = async (e) => {
+    e.preventDefault();
+    const corpo = { acao: "salvar_campanha", id: $("camp-id").value || null, nome: $("camp-nome").value.trim(), desconto_pct: Number($("camp-desc").value), comissao_pct: Number($("camp-com").value), padrao: $("camp-padrao").checked, ativa: $("camp-ativa").checked };
+    const r = await acao(corpo, "Campanha salva.", $("camp-salvar"));
+    if (r) limparCampanha();
+  };
+
+  // Coleções
+  async function carregarColecoes() {
+    const { data } = await sb.from("colecoes").select("*").order("titulo");
+    const tb = $("t-col");
+    if (!data || !data.length) { tb.innerHTML = `<tr><td colspan="2" class="vazio">As coleções aparecem aqui assim que a Shopify estiver ligada.</td></tr>`; return; }
+    tb.innerHTML = data.map((c) => `<tr><td>${esc(c.titulo)}</td><td><label class="aceite"><input type="checkbox" data-h="${esc(c.handle)}" ${c.ativa ? "checked" : ""}> <span>${c.ativa ? "Aparece" : "Escondida"}</span></label></td></tr>`).join("");
+    tb.querySelectorAll("input[data-h]").forEach((i) => i.onchange = () => acao({ acao: "colecao_visivel", handle: i.dataset.h, ativa: i.checked }, i.checked ? "Coleção aparece no cadastro." : "Coleção escondida do cadastro.", i));
+  }
+
+  iniciar();
+})();
+</script>
+</body>
+</html>

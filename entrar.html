@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar | Parceiros 99K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,600;6..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .entrada { max-width: 420px; margin: 48px auto 0; }
+  .entrada h1 { font-size: 2.2rem; }
+  .troca { margin-top: 16px; font-size: .95rem; }
+  .troca button { background: none; border: 0; color: var(--verde); text-decoration: underline; font: inherit; cursor: pointer; padding: 0; }
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="topo-in">
+    <a class="marca" href="./">99K <span>Parceiros</span></a>
+    <a class="link-topo" href="./#cadastro">Quero ser parceira</a>
+  </div>
+</header>
+
+<main class="pagina">
+  <div class="entrada">
+    <div id="aviso" class="aviso hidden" role="alert"></div>
+
+    <form class="caixa" id="f-entrar">
+      <h1>Entrar</h1>
+      <div class="campo"><label for="email">E-mail</label><input id="email" type="email" autocomplete="email" required></div>
+      <div class="campo"><label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-primario btn-largo" type="submit">Entrar</button>
+      <p class="troca"><button type="button" id="ir-esqueci">Esqueci minha senha</button></p>
+    </form>
+
+    <form class="caixa hidden" id="f-esqueci">
+      <h1>Nova senha</h1>
+      <p class="muted">Mandamos um link para o seu e-mail. Abrindo o link, você cria uma senha nova.</p>
+      <div class="campo"><label for="email2">E-mail do cadastro</label><input id="email2" type="email" autocomplete="email" required></div>
+      <button class="btn btn-primario btn-largo" type="submit">Enviar link</button>
+      <p class="troca"><button type="button" id="voltar">Voltar para entrar</button></p>
+    </form>
+
+    <form class="caixa hidden" id="f-nova">
+      <h1>Crie a nova senha</h1>
+      <div class="campo"><label for="nova">Nova senha</label><input id="nova" type="password" autocomplete="new-password" minlength="8" required><span class="dica">Mínimo de 8 caracteres.</span></div>
+      <div class="campo"><label for="nova2">Repita a senha</label><input id="nova2" type="password" autocomplete="new-password" minlength="8" required></div>
+      <button class="btn btn-primario btn-largo" type="submit">Salvar senha</button>
+    </form>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const { sb } = window.P;
+  const $ = (id) => document.getElementById(id);
+  const formas = ["f-entrar", "f-esqueci", "f-nova"];
+  function mostrar(id) { formas.forEach((f) => $(f).classList.toggle("hidden", f !== id)); }
+  function aviso(msg, tipo) { const a = $("aviso"); a.className = "aviso aviso-" + (tipo || "erro"); a.textContent = msg; a.classList.toggle("hidden", !msg); }
+  let recuperando = location.hash.includes("type=recovery");
+
+  async function seguir() {
+    const { data } = await sb.rpc("is_admin");
+    location.href = data ? "admin.html" : "painel.html";
+  }
+
+  sb.auth.onAuthStateChange((evento, sessao) => {
+    if (evento === "PASSWORD_RECOVERY") { recuperando = true; mostrar("f-nova"); aviso(""); }
+    else if (evento === "SIGNED_IN" && sessao && !recuperando) seguir();
+  });
+  if (recuperando) mostrar("f-nova");
+  else sb.auth.getSession().then(({ data }) => { if (data.session) seguir(); });
+
+  $("ir-esqueci").onclick = () => { $("email2").value = $("email").value; mostrar("f-esqueci"); aviso(""); };
+  $("voltar").onclick = () => { mostrar("f-entrar"); aviso(""); };
+
+  $("f-entrar").onsubmit = async (e) => {
+    e.preventDefault(); aviso("");
+    const { error } = await sb.auth.signInWithPassword({ email: $("email").value.trim().toLowerCase(), password: $("senha").value });
+    if (error) aviso("E-mail ou senha não conferem. Se esqueceu a senha, peça um link novo.");
+    else seguir();
+  };
+
+  $("f-esqueci").onsubmit = async (e) => {
+    e.preventDefault();
+    const destino = location.origin + location.pathname;
+    const { error } = await sb.auth.resetPasswordForEmail($("email2").value.trim().toLowerCase(), { redirectTo: destino });
+    if (error) aviso("Não foi possível enviar o link agora. Tente de novo em alguns minutos.");
+    else aviso("Se esse e-mail estiver cadastrado, o link chega em instantes. Confira também o spam.", "ok");
+  };
+
+  $("f-nova").onsubmit = async (e) => {
+    e.preventDefault();
+    if ($("nova").value.length < 8) return aviso("A senha precisa de pelo menos 8 caracteres.");
+    if ($("nova").value !== $("nova2").value) return aviso("As senhas não são iguais.");
+    const { error } = await sb.auth.updateUser({ password: $("nova").value });
+    if (error) return aviso("O link expirou. Peça um link novo em Esqueci minha senha.");
+    recuperando = false;
+    history.replaceState(null, "", location.pathname);
+    aviso("Senha salva.", "ok");
+    seguir();
+  };
+})();
+</script>
+</body>
+</html>

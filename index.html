@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parceiros 99K Joias</title>
+<meta name="description" content="Programa de Parceiros 99K Joias: divulgue com o seu cupom e ganhe comissão em cada compra.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,600;6..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .capa { background: var(--verde-fundo); color: #fff; overflow: hidden; }
+  .capa-in {
+    max-width: 1080px; margin: 0 auto; padding: 40px 16px 56px;
+    display: grid; grid-template-columns: 1.25fr 1fr; gap: 40px; align-items: center;
+  }
+  .capa h1 { color: #fff; max-width: 13ch; }
+  .capa p.sub { color: #d7e3de; font-size: 1.125rem; max-width: 46ch; }
+  .capa .acoes { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-top: 24px; }
+  .capa .acoes a.entrar { color: var(--ouro-claro); }
+  .vitrine { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+  .vitrine .plaquinha { transform: rotate(-4deg); }
+  .vitrine .plaquinha .codigo { font-size: clamp(1.8rem, 6vw, 2.6rem); }
+  .vitrine .legenda { color: #b9cbc4; font-size: .95rem; max-width: 30ch; margin-left: 8px; }
+  @media (max-width: 760px) {
+    .capa-in { grid-template-columns: 1fr; gap: 28px; padding: 32px 16px 40px; }
+    .vitrine { order: -1; }
+  }
+
+  .passos { max-width: 1080px; margin: 0 auto; padding: 40px 16px 8px; }
+  .passos ol { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; counter-reset: passo; }
+  .passos li { counter-increment: passo; border-top: 2px solid var(--ouro); padding-top: 14px; }
+  .passos li::before { content: counter(passo); font-family: var(--display); font-size: 2rem; color: var(--ouro-escuro); display: block; line-height: 1; margin-bottom: 8px; }
+  .passos h3 { margin-bottom: .3em; }
+  .passos p { color: var(--cinza); margin: 0; }
+  @media (max-width: 760px) { .passos ol { grid-template-columns: 1fr; } }
+
+  .cadastro { padding-top: 32px; }
+  .codigo-linha { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+  .codigo-status { font-size: .875rem; }
+  .codigo-status.ok { color: var(--ok); }
+  .codigo-status.ruim { color: var(--erro); }
+  .isca { position: absolute; left: -9999px; }
+  .enviado { text-align: center; padding: 40px 24px; }
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="topo-in">
+    <a class="marca" href="./">99K <span>Parceiros</span></a>
+    <a class="link-topo" href="entrar.html">Entrar</a>
+  </div>
+</header>
+
+<section class="capa">
+  <div class="capa-in">
+    <div>
+      <h1>Seu cupom, suas vendas, sua comissão.</h1>
+      <p class="sub">No Programa de Parceiros 99K você divulga as nossas joias com um cupom só seu. Quem compra com ele ganha desconto, e você recebe comissão em cada pedido.</p>
+      <div class="acoes">
+        <a class="btn btn-ouro" href="#cadastro">Quero ser parceira</a>
+        <a class="entrar" href="entrar.html">Já sou parceira: entrar no painel</a>
+      </div>
+    </div>
+    <div class="vitrine" aria-hidden="true">
+      <div class="plaquinha"><span class="codigo" id="vitrine-codigo">SEUNOME10</span></div>
+      <p class="legenda">É assim que o seu código aparece no seu painel, pronto para copiar e divulgar.</p>
+    </div>
+  </div>
+</section>
+
+<section class="passos" aria-labelledby="como-funciona">
+  <h2 id="como-funciona">Como funciona</h2>
+  <ol>
+    <li><h3>Faça o seu cadastro</h3><p>Conte quem você é e escolha o código do seu cupom.</p></li>
+    <li><h3>Aguarde a análise</h3><p>A 99K olha o seu cadastro e responde por e-mail.</p></li>
+    <li><h3>Divulgue e acompanhe</h3><p>Com o cupom ativo, cada compra aparece no seu painel na hora.</p></li>
+  </ol>
+</section>
+
+<main class="pagina cadastro" id="cadastro">
+  <div class="estreita">
+    <div class="caixa" id="caixa-form">
+      <h2>Cadastro de parceira</h2>
+      <p class="muted">Todos os campos são obrigatórios, menos complemento e coleção preferida.</p>
+      <div id="aviso" class="aviso aviso-erro hidden" role="alert"></div>
+
+      <form id="form" novalidate>
+        <input class="isca" type="text" name="site" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+        <fieldset>
+          <legend>Seus dados</legend>
+          <div class="campo"><label for="nome">Nome completo</label><input id="nome" name="nome" autocomplete="name" required></div>
+          <div class="linha2">
+            <div class="campo"><label for="cpf">CPF</label><input id="cpf" name="cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" required></div>
+            <div class="campo"><label for="whatsapp">WhatsApp com DDD</label><input id="whatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="(11) 99999-9999" required></div>
+          </div>
+          <div class="campo"><label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="email" required><span class="dica">É por aqui que você recebe a resposta e entra no painel.</span></div>
+          <div class="campo"><label for="instagram">Seu @ do Instagram</label><input id="instagram" name="instagram" autocomplete="off" placeholder="@seuperfil" required></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Endereço</legend>
+          <div class="linha2">
+            <div class="campo"><label for="cep">CEP</label><input id="cep" name="cep" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" required><span class="dica" id="cep-dica">Rua, bairro e cidade são preenchidos pelo CEP.</span></div>
+            <div></div>
+          </div>
+          <div class="linha3">
+            <div class="campo"><label for="rua">Rua</label><input id="rua" name="rua" autocomplete="address-line1" required></div>
+            <div class="campo"><label for="numero">Número</label><input id="numero" name="numero" autocomplete="off" required></div>
+          </div>
+          <div class="campo"><label for="complemento">Complemento</label><input id="complemento" name="complemento" autocomplete="address-line2"></div>
+          <div class="campo"><label for="bairro">Bairro</label><input id="bairro" name="bairro" required></div>
+          <div class="linha3">
+            <div class="campo"><label for="cidade">Cidade</label><input id="cidade" name="cidade" autocomplete="address-level2" required></div>
+            <div class="campo"><label for="estado">Estado</label>
+              <select id="estado" name="estado" autocomplete="address-level1" required>
+                <option value="">UF</option>
+                <option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option><option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option><option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option><option>SP</option><option>SE</option><option>TO</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Seu cupom</legend>
+          <div class="campo">
+            <label for="codigo">Código que você quer</label>
+            <input id="codigo" name="codigo" autocomplete="off" maxlength="20" placeholder="Ex.: MARIA10" required>
+            <span class="dica">De 4 a 20 letras ou números, sem espaço nem acento.</span>
+            <div class="codigo-linha">
+              <div class="plaquinha vazia" id="previa"><span class="codigo" id="previa-codigo">SEUCODIGO</span></div>
+              <span class="codigo-status" id="codigo-status" aria-live="polite"></span>
+            </div>
+          </div>
+          <div class="campo">
+            <label for="colecao">Coleção preferida</label>
+            <select id="colecao" name="colecao"><option value="">Prefiro não escolher</option></select>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Pagamento da comissão</legend>
+          <div class="campo"><label for="pix">Chave Pix</label><input id="pix" name="pix" autocomplete="off" required><span class="dica">CPF, e-mail, celular ou chave aleatória.</span></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Acesso ao painel</legend>
+          <div class="linha2">
+            <div class="campo"><label for="senha">Crie uma senha</label><input id="senha" name="senha" type="password" autocomplete="new-password" minlength="8" required><span class="dica">Mínimo de 8 caracteres.</span></div>
+            <div class="campo"><label for="senha2">Repita a senha</label><input id="senha2" name="senha2" type="password" autocomplete="new-password" minlength="8" required></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Regras do programa</legend>
+          <div class="regras" id="regras" tabindex="0"></div>
+          <label class="aceite"><input type="checkbox" id="aceite" required> <span>Li e aceito as regras do Programa de Parceiros 99K e o uso dos meus dados como descrito acima.</span></label>
+        </fieldset>
+
+        <button class="btn btn-primario btn-largo" type="submit" id="enviar">Enviar cadastro</button>
+      </form>
+    </div>
+
+    <div class="caixa enviado hidden" id="caixa-ok">
+      <div class="plaquinha"><span class="codigo" id="ok-codigo"></span></div>
+      <h2 style="margin-top:24px">Cadastro enviado</h2>
+      <p>A 99K vai analisar o seu cadastro e responder no e-mail <strong id="ok-email"></strong>.</p>
+      <p class="muted">Enquanto isso, você já pode entrar no painel com o seu e-mail e a senha que criou para acompanhar a análise.</p>
+      <a class="btn btn-linha" href="entrar.html">Entrar no painel</a>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/config.js"></script>
+<script src="assets/regras.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  const { sb, chamar, soDigitos, esc } = window.P;
+  const $ = (id) => document.getElementById(id);
+  $("regras").innerHTML = window.REGRAS_HTML;
+
+  // Coleções disponíveis (vêm da Shopify, sincronizadas automaticamente)
+  sb.from("colecoes").select("handle,titulo").order("titulo").then(({ data }) => {
+    (data || []).forEach((c) => {
+      const o = document.createElement("option"); o.value = c.handle; o.textContent = c.titulo; $("colecao").appendChild(o);
+    });
+  });
+
+  // Máscaras simples
+  function mascara(el, fn) { el.addEventListener("input", () => { const p = el.selectionStart; el.value = fn(el.value); }); }
+  mascara($("cpf"), (v) => { v = soDigitos(v).slice(0, 11); return v.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2"); });
+  mascara($("cep"), (v) => { v = soDigitos(v).slice(0, 8); return v.replace(/(\d{5})(\d)/, "$1-$2"); });
+  mascara($("whatsapp"), (v) => { v = soDigitos(v).slice(0, 11); if (v.length > 10) return v.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3"); return v.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3").replace(/[-\s(]+$/, ""); });
+
+  // CEP preenche o endereço
+  $("cep").addEventListener("input", async () => {
+    const cep = soDigitos($("cep").value);
+    if (cep.length !== 8) return;
+    $("cep-dica").textContent = "Buscando endereço...";
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const j = await r.json();
+      if (j.erro) { $("cep-dica").textContent = "CEP não encontrado. Preencha o endereço à mão."; return; }
+      $("rua").value = j.logradouro || ""; $("bairro").value = j.bairro || ""; $("cidade").value = j.localidade || ""; $("estado").value = j.uf || "";
+      $("cep-dica").textContent = "Endereço preenchido. Confira e complete o número.";
+      $("numero").focus();
+    } catch (_) { $("cep-dica").textContent = "Não deu para buscar o CEP. Preencha o endereço à mão."; }
+  });
+
+  // Código do cupom: maiúsculas, prévia e conferência de disponibilidade
+  let codigoOk = false, timer;
+  $("codigo").addEventListener("input", () => {
+    const el = $("codigo");
+    el.value = el.value.toUpperCase().normalize("NFD").replace(/[^A-Z0-9]/g, "").slice(0, 20);
+    const v = el.value;
+    $("previa-codigo").textContent = v || "SEUCODIGO";
+    $("previa").classList.toggle("vazia", !v);
+    codigoOk = false;
+    const st = $("codigo-status"); st.className = "codigo-status"; st.textContent = "";
+    clearTimeout(timer);
+    if (v.length < 4) { if (v) st.textContent = "Use pelo menos 4 caracteres."; return; }
+    timer = setTimeout(async () => {
+      const { data, error } = await sb.rpc("codigo_disponivel", { p_codigo: v });
+      if ($("codigo").value !== v) return;
+      if (error) { st.textContent = ""; return; }
+      codigoOk = !!data;
+      st.classList.add(data ? "ok" : "ruim");
+      st.textContent = data ? "Código disponível." : "Esse código já está em uso. Escolha outro.";
+    }, 400);
+  });
+
+  function cpfValido(c) {
+    if (!/^\d{11}$/.test(c) || /^(\d)\1{10}$/.test(c)) return false;
+    let s = 0; for (let i = 0; i < 9; i++) s += +c[i] * (10 - i);
+    let d = (s * 10) % 11; if (d === 10) d = 0; if (d !== +c[9]) return false;
+    s = 0; for (let i = 0; i < 10; i++) s += +c[i] * (11 - i);
+    d = (s * 10) % 11; if (d === 10) d = 0; return d === +c[10];
+  }
+
+  function marcar(id, msg) {
+    const campo = $(id).closest(".campo");
+    if (!campo) return;
+    campo.classList.add("erro");
+    let m = campo.querySelector(".msg-erro");
+    if (!m) { m = document.createElement("span"); m.className = "msg-erro"; campo.appendChild(m); }
+    m.textContent = msg;
+  }
+
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    document.querySelectorAll(".campo.erro").forEach((c) => { c.classList.remove("erro"); c.querySelector(".msg-erro")?.remove(); });
+    $("aviso").classList.add("hidden");
+
+    const d = {
+      nome: $("nome").value.trim(),
+      cpf: soDigitos($("cpf").value),
+      email: $("email").value.trim().toLowerCase(),
+      whatsapp: soDigitos($("whatsapp").value),
+      instagram: $("instagram").value.trim().replace(/^@+/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//i, "").replace(/\/.*$/, ""),
+      cep: soDigitos($("cep").value),
+      rua: $("rua").value.trim(), numero: $("numero").value.trim(), complemento: $("complemento").value.trim(),
+      bairro: $("bairro").value.trim(), cidade: $("cidade").value.trim(), estado: $("estado").value,
+      codigo: $("codigo").value.trim(),
+      colecao: $("colecao").value || null,
+      pix: $("pix").value.trim(),
+      senha: $("senha").value,
+      aceite: $("aceite").checked,
+      versao_regras: window.PARCEIROS_CONFIG.versaoRegras,
+      site: document.querySelector('input[name="site"]').value,
+    };
+
+    const erros = [];
+    if (d.nome.split(/\s+/).length < 2) erros.push(["nome", "Escreva nome e sobrenome."]);
+    if (!cpfValido(d.cpf)) erros.push(["cpf", "CPF inválido. Confira os números."]);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) erros.push(["email", "E-mail inválido."]);
+    if (d.whatsapp.length < 10) erros.push(["whatsapp", "Coloque o número com DDD."]);
+    if (!/^[A-Za-z0-9._]{1,30}$/.test(d.instagram)) erros.push(["instagram", "Escreva só o seu @, por exemplo @seuperfil."]);
+    if (d.cep.length !== 8) erros.push(["cep", "CEP com 8 números."]);
+    ["rua", "numero", "bairro", "cidade"].forEach((k) => { if (!d[k]) erros.push([k, "Campo obrigatório."]); });
+    if (!d.estado) erros.push(["estado", "Escolha o estado."]);
+    if (!/^[A-Z0-9]{4,20}$/.test(d.codigo)) erros.push(["codigo", "De 4 a 20 letras ou números."]);
+    else if (!codigoOk) erros.push(["codigo", "Escolha um código disponível."]);
+    if (d.pix.length < 5) erros.push(["pix", "Informe a chave Pix."]);
+    if (d.senha.length < 8) erros.push(["senha", "Mínimo de 8 caracteres."]);
+    if (d.senha !== $("senha2").value) erros.push(["senha2", "As senhas não são iguais."]);
+    if (!d.aceite) erros.push(["aceite", ""]);
+
+    if (erros.length) {
+      erros.forEach(([id, msg]) => msg && marcar(id, msg));
+      const av = $("aviso");
+      av.textContent = d.aceite ? "Confira os campos marcados." : "Confira os campos marcados e aceite as regras do programa.";
+      av.classList.remove("hidden");
+      const primeiro = erros.find(([, m]) => m) || erros[0];
+      $(primeiro[0]).focus();
+      return;
+    }
+
+    const btn = $("enviar"); btn.disabled = true; btn.textContent = "Enviando...";
+    try {
+      await chamar("cadastro", d);
+      $("ok-codigo").textContent = d.codigo;
+      $("ok-email").textContent = d.email;
+      $("caixa-form").classList.add("hidden");
+      $("caixa-ok").classList.remove("hidden");
+      $("cadastro").scrollIntoView({ behavior: "smooth" });
+    } catch (err) {
+      const av = $("aviso"); av.textContent = err.message; av.classList.remove("hidden"); av.scrollIntoView({ block: "center" });
+    } finally { btn.disabled = false; btn.textContent = "Enviar cadastro"; }
+  });
+})();
+</script>
+</body>
+</html>
