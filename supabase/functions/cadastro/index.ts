@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
   await enviarEmail(d.email, "Recebemos o seu cadastro | 99K Afiliados", moldeEmail(
     `${esc(d.nome.split(" ")[0])}, recebemos o seu cadastro`,
     `<p>Seu cadastro no Programa de Afiliados 99K já foi recebido!</p>
-     <p>Nossa equipe vai analisar o seu cadastro e te responder por aqui ou pelo WhatsApp. A análise é bem rápida.</p>
+     <p>Nossa equipe vai analisar o seu cadastro e te responder por aqui ou pelo WhatsApp. Não se preocupe, nossa análise não demora mais de uma semana.</p>
      <p>Equipe 99K JOIAS.</p>`));
 
   // Aviso para a 99K (se o e-mail estiver configurado)
