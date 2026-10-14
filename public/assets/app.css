@@ -15,8 +15,8 @@
   --erro-fundo: #f8e7e5;
   --ok: #1f6b4a;
   --raio: 10px;
-  --display: "Bodoni Moda", "Didot", Georgia, serif;
-  --texto: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: "Karla", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --texto: "Karla", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -35,7 +35,7 @@ a:hover { color: var(--verde-fundo); }
 
 :focus-visible { outline: 3px solid var(--ouro); outline-offset: 2px; border-radius: 4px; }
 
-h1, h2, h3 { font-family: var(--display); font-weight: 600; line-height: 1.15; margin: 0 0 .5em; }
+h1, h2, h3 { font-family: var(--display); font-weight: 800; line-height: 1.12; letter-spacing: -.02em; margin: 0 0 .5em; }
 h1 { font-size: clamp(2.1rem, 6vw, 3.4rem); letter-spacing: -.01em; }
 h2 { font-size: clamp(1.5rem, 3.5vw, 2rem); }
 h3 { font-size: 1.2rem; }
@@ -102,7 +102,7 @@ p { margin: 0 0 1em; }
 @media (max-width: 560px) { .linha2, .linha3 { grid-template-columns: 1fr; } }
 
 fieldset { border: 0; padding: 0; margin: 0 0 28px; }
-legend { font-family: var(--display); font-size: 1.35rem; font-weight: 600; margin-bottom: 14px; padding: 0; }
+legend { font-family: var(--display); font-size: 1.3rem; font-weight: 800; letter-spacing: -.01em; margin-bottom: 14px; padding: 0; }
 
 .caixa {
   background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio);
@@ -131,8 +131,8 @@ legend { font-family: var(--display); font-size: 1.35rem; font-weight: 600; marg
   box-shadow: inset 0 0 0 2px rgba(138,109,34,.6);
 }
 .plaquinha .codigo {
-  font-family: var(--display); font-weight: 700; font-size: clamp(1.4rem, 5vw, 2rem);
-  letter-spacing: .08em; overflow-wrap: anywhere;
+  font-family: var(--display); font-weight: 800; font-size: clamp(1.4rem, 5vw, 2rem);
+  letter-spacing: .06em; overflow-wrap: anywhere;
 }
 .plaquinha.vazia .codigo { color: rgba(0,38,31,.35); }
 
@@ -171,7 +171,7 @@ tr.cancelada td.num { text-decoration: line-through; }
 @media (max-width: 720px) { .numeros { grid-template-columns: 1fr 1fr; } .numeros .destaque { grid-column: 1 / -1; } }
 .numero { background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); padding: 16px 18px; }
 .numero .rotulo { color: var(--cinza); font-size: .875rem; }
-.numero .valor { font-family: var(--display); font-size: 1.7rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.numero .valor { font-family: var(--display); font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .numero.destaque { background: var(--verde-fundo); border-color: var(--verde-fundo); color: #fff; }
 .numero.destaque .rotulo { color: var(--ouro-claro); }
 .numero.destaque .valor { font-size: clamp(2.2rem, 6vw, 2.9rem); color: #fff; }
