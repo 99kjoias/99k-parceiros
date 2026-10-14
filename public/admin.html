@@ -226,7 +226,7 @@
     $("filtro-status").onchange = desenharParceiras;
     await carregarTudo();
     sb.channel("adm").on("postgres_changes", { event: "*", schema: "public", table: "vendas" }, carregarVendas)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "parceiros" }, carregarTudo).subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "parceiros" }, carregarTudo).subscribe();
   }
 
   async function carregarTudo() {
