@@ -87,12 +87,27 @@ async function avisarAprovacao(p: any, camp: any, token: string) {
   const mensagem = `Olá, ${primeiro}! Seu cadastro no Programa de Afiliados 99K foi aprovado. ` +
     `Para escolher o seu cupom, cadastrar a sua chave Pix e criar a sua senha, acesse: ${link} ` +
     `(o link vale ${DIAS_VALIDADE} dias).`;
-  const email_enviado = await enviarEmail(p.email, "Seu cadastro no Programa de Afiliados 99K foi aprovado", moldeEmail(
-    `${esc(primeiro)}, seu cadastro foi aprovado`,
-    `<p>Agora falta pouco: escolha o código do seu cupom, cadastre a chave Pix para receber a comissão e crie a senha do seu painel.</p>
-     ${camp ? `<p>Quem comprar com o seu cupom ganha ${pct(camp.desconto_pct)} de desconto, e você recebe ${pct(camp.comissao_pct)} de comissão sobre o valor pago pelas peças.</p>` : ""}
+  const desc = camp ? pct(camp.desconto_pct) : "";
+  const com = camp ? pct(camp.comissao_pct) : "";
+  const email_enviado = await enviarEmail(p.email, "Você foi aprovado no Programa de Afiliados 99K", moldeEmail(
+    `${esc(primeiro)}, boas-vindas ao time de afiliados da 99K`,
+    `<p>Seu cadastro foi aprovado. Agora falta só ativar o seu acesso:</p>
      <p><a href="${link}" style="display:inline-block;background:#004236;color:#ffffff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:bold">Ativar meu cupom</a></p>
-     <p style="color:#5f6966;font-size:13px">O link vale ${DIAS_VALIDADE} dias.</p>`));
+     <p style="color:#5f6966;font-size:13px">O link vale ${DIAS_VALIDADE} dias.</p>
+     <p><strong>Na ativação você:</strong></p>
+     <ul style="padding-left:20px;margin:0 0 14px">
+       <li>escolhe o código do seu cupom (por exemplo, MARIA10);</li>
+       <li>cadastra a chave Pix para receber a comissão;</li>
+       <li>cria a senha do seu painel.</li>
+     </ul>
+     <p><strong>Como funciona:</strong></p>
+     <ul style="padding-left:20px;margin:0 0 14px">
+       ${camp ? `<li>Quem compra no site com o seu cupom ganha <strong>${desc} de desconto</strong>, que soma com as promoções do site.</li>
+       <li>Você recebe <strong>${com} de comissão</strong> sobre o valor que a cliente pagou pelas peças, depois dos descontos e sem o frete.</li>` : ""}
+       <li>Cada venda aparece no seu painel na hora. Lá você também acompanha o ranking dos afiliados do mês.</li>
+       <li>O mês fecha no último dia, e a comissão é paga por Pix até o 5º dia útil do mês seguinte.</li>
+     </ul>
+     <p>Ficou com dúvida? É só responder este e-mail.</p>`));
   const whatsapp = `https://wa.me/55${p.whatsapp}?text=${encodeURIComponent(mensagem)}`;
   return { link, whatsapp, email_enviado };
 }
@@ -102,9 +117,9 @@ async function recusar(db: any, b: any) {
   if (p.status !== "pendente") throw new Error("Este cadastro já foi analisado.");
   await db.from("parceiros").update({ status: "recusada" }).eq("id", p.id);
   const primeiro = esc(String(p.nome).split(" ")[0]);
-  const enviado = await enviarEmail(p.email, "Programa de Afiliados 99K", moldeEmail(
+  const enviado = await enviarEmail(p.email, "Sobre o seu cadastro no Programa de Afiliados 99K", moldeEmail(
     `${primeiro}, obrigado pelo interesse`,
-    `<p>Analisamos o seu cadastro e, neste momento, ele não foi aprovado para o Programa de Afiliados 99K.</p><p>Obrigado por querer divulgar a 99K.</p>`));
+    `<p>Analisamos o seu cadastro e, neste momento, ele não foi aprovado para o Programa de Afiliados 99K.</p>`));
   return { ok: true, email_enviado: enviado };
 }
 

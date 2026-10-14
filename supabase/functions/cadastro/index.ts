@@ -79,6 +79,14 @@ Deno.serve(async (req) => {
     return erro("Não foi possível salvar o cadastro. Confira os dados e tente de novo.", 500);
   }
 
+  // Confirmação para quem se cadastrou
+  await enviarEmail(d.email, "Recebemos o seu cadastro | 99K Afiliados", moldeEmail(
+    `${esc(d.nome.split(" ")[0])}, recebemos o seu cadastro`,
+    `<p>Seu cadastro no Programa de Afiliados 99K já foi recebido!</p>
+     <p>Nossa equipe vai analisar o seu cadastro e te responder por aqui ou pelo WhatsApp. A análise é bem rápida.</p>
+     <p>Enquanto isso, não precisa fazer nada.</p>
+     <p>Equipe 99K JOIAS.</p>`));
+
   // Aviso para a 99K (se o e-mail estiver configurado)
   const avisar = Deno.env.get("EMAIL_AVISO_LOJISTA");
   if (avisar) {

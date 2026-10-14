@@ -78,6 +78,12 @@ Deno.serve(async (req) => {
     ativacao_hash: null, ativacao_expira: null,
   }).eq("id", p.id);
 
+  await enviarEmail(p.email, `Seu cupom ${codigo} está ativo`, moldeEmail(
+    `Tudo pronto, ${esc(String(p.nome).split(" ")[0])}`,
+    `<p>O seu cupom <strong>${codigo}</strong> já vale no site da 99K. Agora é divulgar!</p>
+     <p><a href="${SITE_PARCEIROS}/entrar" style="display:inline-block;background:#004236;color:#ffffff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:bold">Abrir meu painel</a></p>
+     <p>Para entrar no painel, use este e-mail e a senha que você criou.</p>`));
+
   const avisar = Deno.env.get("EMAIL_AVISO_LOJISTA");
   if (avisar) {
     await enviarEmail(avisar, `Cupom ativado: ${codigo}`, moldeEmail("Afiliado ativou o cupom",
