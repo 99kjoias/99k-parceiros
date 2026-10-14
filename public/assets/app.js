@@ -48,7 +48,9 @@
     const { data: { session } } = await sb.auth.getSession();
     const headers = { "Content-Type": "application/json", apikey: cfg.supabaseKey };
     if (session) headers.Authorization = "Bearer " + session.access_token;
-    const r = await fetch(`${cfg.supabaseUrl}/functions/v1/${nome}`, { method: "POST", headers, body: JSON.stringify(corpo || {}) });
+    let r;
+    try { r = await fetch(`${cfg.supabaseUrl}/functions/v1/${nome}`, { method: "POST", headers, body: JSON.stringify(corpo || {}) }); }
+    catch (_) { throw new Error("Não foi possível falar com o servidor. Confira a internet e tente de novo."); }
     let j = {};
     try { j = await r.json(); } catch (_) { /* resposta vazia */ }
     if (!r.ok || j.erro) throw new Error(j.erro || "Não foi possível concluir agora. Tente de novo em instantes.");
