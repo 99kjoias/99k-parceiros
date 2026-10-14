@@ -47,11 +47,13 @@ Deno.serve(async (req) => {
   const db = adminDb();
 
   const [{ data: porCpf }, { data: porEmail }] = await Promise.all([
-    db.from("parceiros").select("id").eq("cpf", d.cpf).maybeSingle(),
-    db.from("parceiros").select("id").eq("email", d.email).maybeSingle(),
+    db.from("parceiros").select("id,status").eq("cpf", d.cpf).maybeSingle(),
+    db.from("parceiros").select("id,status").eq("email", d.email).maybeSingle(),
   ]);
-  if (porCpf) return erro("Já existe um cadastro com este CPF. Se for seu, fale com a 99K.");
-  if (porEmail) return erro("Já existe um cadastro com este e-mail.");
+  // Quem foi recusado pode se cadastrar de novo, do zero (decisão de Matheus, 14/10/2026).
+  // Cadastro em análise, ativo ou encerrado continua bloqueando.
+  if (porCpf && porCpf.status !== "recusada") return erro("Já existe um cadastro com este CPF. Se for seu, fale com a 99K.");
+  if (porEmail && porEmail.status !== "recusada") return erro("Já existe um cadastro com este e-mail.");
 
   let colecao = d.colecao;
   if (colecao) {
@@ -59,24 +61,42 @@ Deno.serve(async (req) => {
     if (!c) colecao = null;
   }
 
-  const { data: criado, error: e1 } = await db.auth.admin.createUser({ email: d.email, email_confirm: true });
-  if (e1 || !criado?.user) {
-    const msg = String(e1?.message ?? "");
-    if (/already|registered|exists/i.test(msg)) return erro("Este e-mail já tem cadastro. Se precisar de ajuda, fale com a 99K.");
-    return erro("Não foi possível criar o acesso agora. Tente de novo em instantes.", 500);
-  }
-
-  const { error: e2 } = await db.from("parceiros").insert({
-    id: criado.user.id,
+  const dados = {
     nome: d.nome, cpf: d.cpf, email: d.email, whatsapp: d.whatsapp, instagram: d.instagram,
     cep: d.cep, rua: d.rua, numero: d.numero, complemento: d.complemento, bairro: d.bairro, cidade: d.cidade, estado: d.estado,
     colecao_preferida: colecao,
     status: "pendente", aceite_regras_em: new Date().toISOString(), versao_regras: d.versao,
-  });
-  if (e2) {
-    await db.auth.admin.deleteUser(criado.user.id);
-    if (/cpf/i.test(e2.message)) return erro("Já existe um cadastro com este CPF.");
-    return erro("Não foi possível salvar o cadastro. Confira os dados e tente de novo.", 500);
+  };
+
+  const reaproveitar = porEmail ?? porCpf; // cadastro recusado que volta a valer, como novo
+  if (reaproveitar) {
+    // Se CPF e e-mail eram de dois cadastros recusados diferentes, o outro sai
+    if (porCpf && porEmail && porCpf.id !== porEmail.id) {
+      await db.from("parceiros").delete().eq("id", porCpf.id);
+      await db.auth.admin.deleteUser(porCpf.id);
+    }
+    if (!porEmail) {
+      const { error: eu } = await db.auth.admin.updateUserById(reaproveitar.id, { email: d.email, email_confirm: true });
+      if (eu) return erro("Este e-mail já tem cadastro. Se precisar de ajuda, fale com a 99K.");
+    }
+    const { error: er } = await db.from("parceiros").update({
+      ...dados, criado_em: new Date().toISOString(), campanha_id: null, aprovado_em: null, motivo_recusa: null,
+      codigo_desejado: null, chave_pix: null, ativado_em: null, ativacao_hash: null, ativacao_expira: null,
+    }).eq("id", reaproveitar.id);
+    if (er) return erro("Não foi possível salvar o cadastro. Confira os dados e tente de novo.", 500);
+  } else {
+    const { data: criado, error: e1 } = await db.auth.admin.createUser({ email: d.email, email_confirm: true });
+    if (e1 || !criado?.user) {
+      const msg = String(e1?.message ?? "");
+      if (/already|registered|exists/i.test(msg)) return erro("Este e-mail já tem cadastro. Se precisar de ajuda, fale com a 99K.");
+      return erro("Não foi possível criar o acesso agora. Tente de novo em instantes.", 500);
+    }
+    const { error: e2 } = await db.from("parceiros").insert({ id: criado.user.id, ...dados });
+    if (e2) {
+      await db.auth.admin.deleteUser(criado.user.id);
+      if (/cpf/i.test(e2.message)) return erro("Já existe um cadastro com este CPF.");
+      return erro("Não foi possível salvar o cadastro. Confira os dados e tente de novo.", 500);
+    }
   }
 
   // Confirmação para quem se cadastrou
