@@ -4,7 +4,7 @@
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
-/admin.html
+/admin*
   X-Robots-Tag: noindex
-/painel.html
+/painel*
   X-Robots-Tag: noindex
