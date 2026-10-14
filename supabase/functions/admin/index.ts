@@ -73,7 +73,7 @@ async function aprovar(db: any, b: any) {
   const enviado = await enviarEmail(p.email, "Seu cadastro no Programa de Afiliados 99K foi aprovado", moldeEmail(
     `${primeiro}, seu cupom está ativo`,
     `<p>Seu cadastro foi aprovado. O seu cupom já vale no site da 99K:</p>
-     <p style="font-family:Georgia,serif;font-size:26px;letter-spacing:2px;background:#f3e9cc;color:#00261f;padding:12px 18px;border-radius:8px;display:inline-block">${codigo}</p>
+     <p style="font-family:Karla,Arial,sans-serif;font-size:26px;letter-spacing:2px;background:#f3e9cc;color:#00261f;padding:12px 18px;border-radius:8px;display:inline-block">${codigo}</p>
      <p>Quem compra com ele ganha ${pct(camp.desconto_pct)} de desconto, e você recebe ${pct(camp.comissao_pct)} de comissão sobre o valor pago pelas peças.</p>
      <p>Acompanhe as suas vendas em tempo real no painel: <a href="${SITE_PARCEIROS}/entrar.html" style="color:#004236">${SITE_PARCEIROS.replace("https://", "")}</a></p>`));
   return { ok: true, codigo, email_enviado: enviado };
