@@ -241,7 +241,13 @@
     $("atualizado").textContent = "Atualizado às " + dataHora.format(new Date()).split(" ")[1];
   }
 
-  const cupomDe = (id) => S.cupons.find((c) => c.parceiro_id === id);
+  // Cupom mais recente; quem voltou depois de encerrado e ainda não ativou não mostra o cupom antigo
+  const cupomDe = (id) => {
+    const p = S.parceiros.find((x) => x.id === id);
+    if (p && p.status !== "encerrada" && !p.ativado_em) return null;
+    return S.cupons.find((c) => c.parceiro_id === id);
+  };
+  const jaFoiAfiliado = (id) => S.cupons.find((c) => c.parceiro_id === id);
   const campanha = (id) => S.campanhas.find((c) => c.id === id);
   const parceira = (id) => S.parceiros.find((p) => p.id === id);
   function opcoesCampanha(sel) {
@@ -271,7 +277,7 @@
     } else $("fila").innerHTML = "";
     $("fila").insertAdjacentHTML("beforeend", pend.map((p) => `
       <article class="cartao" data-id="${p.id}">
-        <div class="cartao-topo"><h3 style="margin:0">${esc(p.nome)}</h3></div>
+        <div class="cartao-topo"><h3 style="margin:0">${esc(p.nome)}</h3>${jaFoiAfiliado(p.id) ? `<span class="etiqueta et-pendente">Já foi afiliado (cupom ${esc(jaFoiAfiliado(p.id).codigo)})</span>` : ""}</div>
         ${dadosHtml(p)}
         <div class="acoes">
           <div class="campo"><label>Campanha</label><select class="sel-camp">${opcoesCampanha()}</select></div>

@@ -50,10 +50,15 @@ Deno.serve(async (req) => {
     db.from("parceiros").select("id,status").eq("cpf", d.cpf).maybeSingle(),
     db.from("parceiros").select("id,status").eq("email", d.email).maybeSingle(),
   ]);
-  // Quem foi recusado pode se cadastrar de novo, do zero (decisão de Matheus, 14/10/2026).
-  // Cadastro em análise, ativo ou encerrado continua bloqueando.
-  if (porCpf && porCpf.status !== "recusada") return erro("Já existe um cadastro com este CPF. Se for seu, fale com a 99K.");
-  if (porEmail && porEmail.status !== "recusada") return erro("Já existe um cadastro com este e-mail.");
+  // Quem foi recusado ou teve a afiliação encerrada pode se cadastrar de novo e volta para a fila de análise
+  // (decisões de Matheus, 14/10/2026). Cadastro em análise ou afiliado aprovado continua bloqueando.
+  const podeVoltar = (st: string) => st === "recusada" || st === "encerrada";
+  if (porCpf && !podeVoltar(porCpf.status)) return erro("Já existe um cadastro com este CPF. Se for seu, fale com a 99K.");
+  if (porEmail && !podeVoltar(porEmail.status)) return erro("Já existe um cadastro com este e-mail.");
+  // CPF e e-mail em dois cadastros antigos diferentes: só junta se um deles for recusado (sem histórico de vendas)
+  if (porCpf && porEmail && porCpf.id !== porEmail.id && porCpf.status === "encerrada" && porEmail.status === "encerrada") {
+    return erro("Já existe um cadastro com este CPF. Se for seu, fale com a 99K.");
+  }
 
   let colecao = d.colecao;
   if (colecao) {
@@ -68,14 +73,22 @@ Deno.serve(async (req) => {
     status: "pendente", aceite_regras_em: new Date().toISOString(), versao_regras: d.versao,
   };
 
-  const reaproveitar = porEmail ?? porCpf; // cadastro recusado que volta a valer, como novo
+  // Cadastro antigo (recusado ou encerrado) que volta a valer, como novo. O encerrado guarda o histórico de vendas.
+  let reaproveitar = porEmail ?? porCpf;
+  if (porCpf && porEmail && porCpf.id !== porEmail.id) {
+    // Dois cadastros antigos: fica o encerrado (tem histórico) e sai o recusado
+    if (porCpf.status === "encerrada") reaproveitar = porCpf;
+    const sai = reaproveitar!.id === porCpf.id ? porEmail : porCpf;
+    await db.from("parceiros").delete().eq("id", sai.id);
+    await db.auth.admin.deleteUser(sai.id);
+  }
   if (reaproveitar) {
-    // Se CPF e e-mail eram de dois cadastros recusados diferentes, o outro sai
-    if (porCpf && porEmail && porCpf.id !== porEmail.id) {
-      await db.from("parceiros").delete().eq("id", porCpf.id);
-      await db.auth.admin.deleteUser(porCpf.id);
+    const precisaTrocarEmail = !porEmail || reaproveitar.id !== porEmail.id;
+    if (reaproveitar.status === "encerrada") {
+      // A senha antiga deixa de valer: a nova senha é criada na ativação, se for aprovado de novo
+      await db.auth.admin.updateUserById(reaproveitar.id, { password: crypto.randomUUID() + crypto.randomUUID() });
     }
-    if (!porEmail) {
+    if (precisaTrocarEmail) {
       const { error: eu } = await db.auth.admin.updateUserById(reaproveitar.id, { email: d.email, email_confirm: true });
       if (eu) return erro("Este e-mail já tem cadastro. Se precisar de ajuda, fale com a 99K.");
     }
