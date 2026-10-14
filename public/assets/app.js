@@ -59,5 +59,28 @@
 
   function soDigitos(s) { return String(s || "").replace(/\D/g, ""); }
 
+  // Olhinho para mostrar/esconder a senha em todos os campos de senha
+  const OLHO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const OLHO_FECHADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A9.9 9.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2"/><path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7c1.8 0 3.4-.5 4.7-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+  function olhinhos() {
+    document.querySelectorAll('input[type="password"]').forEach((inp) => {
+      if (inp.parentElement.classList.contains("senha-wrap")) return;
+      const w = document.createElement("span"); w.className = "senha-wrap";
+      inp.parentNode.insertBefore(w, inp); w.appendChild(inp);
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "olho"; b.innerHTML = OLHO;
+      b.setAttribute("aria-label", "Mostrar senha");
+      b.onclick = () => {
+        const ver = inp.type === "password";
+        inp.type = ver ? "text" : "password";
+        b.innerHTML = ver ? OLHO_FECHADO : OLHO;
+        b.setAttribute("aria-label", ver ? "Esconder senha" : "Mostrar senha");
+        inp.focus();
+      };
+      w.appendChild(b);
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", olhinhos); else olhinhos();
+
   window.P = { sb, cfg, brl, dataCurta, dataHora, mesAtual, ultimosMeses, rotuloMes, esc, toast, chamar, soDigitos };
 })();
