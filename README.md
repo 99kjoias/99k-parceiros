@@ -3,7 +3,7 @@
 Sistema próprio de parceiras (influenciadoras e afiliadas) da 99K Joias, no lugar da Adzy.
 Endereço: https://parceiros.99kjoias.com.br
 
-## Páginas (publicadas pelo Cloudflare Pages a cada mudança neste repositório)
+## Páginas (pasta `public/`, publicadas pelo Cloudflare Pages a cada mudança neste repositório)
 
 | Página | Para quem | O que faz |
 |---|---|---|
