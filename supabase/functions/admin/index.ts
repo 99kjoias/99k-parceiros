@@ -1,8 +1,10 @@
 // Ações do painel do lojista. Só quem está na tabela admins consegue usar.
-// Cada ação que muda a Shopify parte de um clique de Matheus (exceção à regra de só leitura,
-// autorizada por ele em 14/10/2026 apenas para os cupons do programa).
+// Mudanças nos cupons da Shopify partem de um clique do lojista (exceção à regra de só leitura,
+// autorizada por Matheus em 14/10/2026 apenas para os cupons do programa). O cupom em si é criado
+// na ativação, pelo afiliado já aprovado (função ativar).
 import { adminDb, cors, erro, json, enviarEmail, moldeEmail, esc, SITE_PARCEIROS } from "../_shared/util.ts";
-import { codigoExisteNaLoja, criarCupom, mudarDescontoCupom, desativarCupom, ativarCupom } from "../_shared/shopify.ts";
+import { mudarDescontoCupom, desativarCupom, ativarCupom } from "../_shared/shopify.ts";
+import { novoToken, hashToken, linkAtivacao, DIAS_VALIDADE } from "../_shared/ativacao.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -22,6 +24,7 @@ Deno.serve(async (req) => {
   try {
     switch (b.acao) {
       case "aprovar": return json(await aprovar(db, b));
+      case "novo_link": return json(await novoLink(db, b));
       case "recusar": return json(await recusar(db, b));
       case "encerrar": return json(await encerrar(db, b));
       case "pausar_cupom": return json(await pausar(db, b, true));
@@ -50,33 +53,48 @@ async function buscarParceira(db: any, id: string) {
 async function aprovar(db: any, b: any) {
   const p = await buscarParceira(db, b.parceiro_id);
   if (p.status !== "pendente") throw new Error("Este cadastro já foi analisado.");
-  const codigo = String(b.codigo || p.codigo_desejado).toUpperCase().trim();
-  if (!/^[A-Z0-9]{4,20}$/.test(codigo)) throw new Error("O código precisa ter de 4 a 20 letras ou números.");
-
   const { data: camp } = await db.from("campanhas").select("*").eq("id", b.campanha_id).eq("ativa", true).maybeSingle();
   if (!camp) throw new Error("Escolha uma campanha ativa.");
 
-  const { data: jaUsado } = await db.from("cupons").select("id").eq("codigo", codigo).maybeSingle();
-  if (jaUsado) throw new Error(`O código ${codigo} já é de outro afiliado.`);
-  if (await codigoExisteNaLoja(codigo)) throw new Error(`Já existe um cupom ${codigo} na Shopify. Escolha outro código.`);
+  const token = novoToken();
+  const { error } = await db.from("parceiros").update({
+    status: "aprovada", campanha_id: camp.id, aprovado_em: new Date().toISOString(),
+    ativacao_hash: await hashToken(token),
+    ativacao_expira: new Date(Date.now() + DIAS_VALIDADE * 86_400_000).toISOString(),
+  }).eq("id", p.id);
+  if (error) throw error;
+  return { ok: true, ...(await avisarAprovacao(p, camp, token)) };
+}
 
-  const idShopify = await criarCupom(codigo, Number(camp.desconto_pct));
-  const { error: e1 } = await db.from("cupons").insert({
-    parceiro_id: p.id, campanha_id: camp.id, codigo, shopify_discount_id: idShopify, status: "ativo",
-  });
-  if (e1) { await desativarCupom(idShopify).catch(() => {}); throw new Error("Cupom criado na Shopify, mas não foi salvo aqui. Ele foi desativado; tente de novo."); }
+// Gera um link novo para quem foi aprovado e ainda não ativou (o anterior deixa de valer)
+async function novoLink(db: any, b: any) {
+  const p = await buscarParceira(db, b.parceiro_id);
+  if (p.status !== "aprovada" || p.ativado_em) throw new Error("Este afiliado já ativou o acesso.");
+  const { data: camp } = await db.from("campanhas").select("*").eq("id", p.campanha_id).maybeSingle();
+  const token = novoToken();
+  const { error } = await db.from("parceiros").update({
+    ativacao_hash: await hashToken(token),
+    ativacao_expira: new Date(Date.now() + DIAS_VALIDADE * 86_400_000).toISOString(),
+  }).eq("id", p.id);
+  if (error) throw error;
+  return { ok: true, ...(await avisarAprovacao(p, camp, token)) };
+}
 
-  await db.from("parceiros").update({ status: "aprovada", campanha_id: camp.id, aprovado_em: new Date().toISOString(), codigo_desejado: codigo }).eq("id", p.id);
-
+async function avisarAprovacao(p: any, camp: any, token: string) {
+  const link = linkAtivacao(SITE_PARCEIROS, token);
+  const primeiro = String(p.nome).split(" ")[0];
   const pct = (n: number) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
-  const primeiro = esc(String(p.nome).split(" ")[0]);
-  const enviado = await enviarEmail(p.email, "Seu cadastro no Programa de Afiliados 99K foi aprovado", moldeEmail(
-    `${primeiro}, seu cupom está ativo`,
-    `<p>Seu cadastro foi aprovado. O seu cupom já vale no site da 99K:</p>
-     <p style="font-family:Karla,Arial,sans-serif;font-size:26px;letter-spacing:2px;background:#f3e9cc;color:#00261f;padding:12px 18px;border-radius:8px;display:inline-block">${codigo}</p>
-     <p>Quem compra com ele ganha ${pct(camp.desconto_pct)} de desconto, e você recebe ${pct(camp.comissao_pct)} de comissão sobre o valor pago pelas peças.</p>
-     <p>Acompanhe as suas vendas em tempo real no painel: <a href="${SITE_PARCEIROS}/entrar.html" style="color:#004236">${SITE_PARCEIROS.replace("https://", "")}</a></p>`));
-  return { ok: true, codigo, email_enviado: enviado };
+  const mensagem = `Olá, ${primeiro}! Seu cadastro no Programa de Afiliados 99K foi aprovado. ` +
+    `Para escolher o seu cupom, cadastrar a sua chave Pix e criar a sua senha, acesse: ${link} ` +
+    `(o link vale ${DIAS_VALIDADE} dias).`;
+  const email_enviado = await enviarEmail(p.email, "Seu cadastro no Programa de Afiliados 99K foi aprovado", moldeEmail(
+    `${esc(primeiro)}, seu cadastro foi aprovado`,
+    `<p>Agora falta pouco: escolha o código do seu cupom, cadastre a chave Pix para receber a comissão e crie a senha do seu painel.</p>
+     ${camp ? `<p>Quem comprar com o seu cupom ganha ${pct(camp.desconto_pct)} de desconto, e você recebe ${pct(camp.comissao_pct)} de comissão sobre o valor pago pelas peças.</p>` : ""}
+     <p><a href="${link}" style="display:inline-block;background:#004236;color:#ffffff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:bold">Ativar meu cupom</a></p>
+     <p style="color:#5f6966;font-size:13px">O link vale ${DIAS_VALIDADE} dias.</p>`));
+  const whatsapp = `https://wa.me/55${p.whatsapp}?text=${encodeURIComponent(mensagem)}`;
+  return { link, whatsapp, email_enviado };
 }
 
 async function recusar(db: any, b: any) {
@@ -100,7 +118,7 @@ async function encerrar(db: any, b: any) {
   const c = await cupomDa(db, p.id);
   if (c?.shopify_discount_id && c.status === "ativo") await desativarCupom(c.shopify_discount_id);
   if (c) await db.from("cupons").update({ status: "encerrado" }).eq("id", c.id);
-  await db.from("parceiros").update({ status: "encerrada" }).eq("id", p.id);
+  await db.from("parceiros").update({ status: "encerrada", ativacao_hash: null, ativacao_expira: null }).eq("id", p.id);
   return { ok: true };
 }
 

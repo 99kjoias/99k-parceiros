@@ -1,4 +1,5 @@
-// Cadastro de afiliado (página pública). Cria o login e o cadastro em análise.
+// Cadastro de afiliado (página pública), primeira etapa: dados pessoais, endereço e aceite das regras.
+// O login é criado sem senha (ninguém consegue entrar); a senha, o cupom e a chave Pix vêm na ativação, depois da aprovação.
 import { adminDb, cors, erro, json, enviarEmail, moldeEmail, esc, SITE_PARCEIROS } from "../_shared/util.ts";
 
 const so = (s: unknown) => String(s ?? "").trim();
@@ -29,10 +30,7 @@ Deno.serve(async (req) => {
     cep: dig(b.cep),
     rua: so(b.rua), numero: so(b.numero), complemento: so(b.complemento) || null,
     bairro: so(b.bairro), cidade: so(b.cidade), estado: so(b.estado).toUpperCase(),
-    codigo: so(b.codigo).toUpperCase(),
     colecao: so(b.colecao) || null,
-    pix: so(b.pix),
-    senha: String(b.senha ?? ""),
     versao: so(b.versao_regras) || "v1",
   };
 
@@ -45,21 +43,15 @@ Deno.serve(async (req) => {
   if (d.cep.length !== 8) return erro("CEP inválido.");
   if (!d.rua || !d.numero || !d.bairro || !d.cidade) return erro("Complete o endereço.");
   if (!/^[A-Z]{2}$/.test(d.estado)) return erro("Escolha o estado.");
-  if (!/^[A-Z0-9]{4,20}$/.test(d.codigo)) return erro("O código do cupom precisa ter de 4 a 20 letras ou números.");
-  if (d.pix.length < 5 || d.pix.length > 140) return erro("Informe a chave Pix.");
-  if (d.senha.length < 8 || d.senha.length > 72) return erro("A senha precisa ter pelo menos 8 caracteres.");
 
   const db = adminDb();
-
-  const { data: livre } = await db.rpc("codigo_disponivel", { p_codigo: d.codigo });
-  if (!livre) return erro("Esse código de cupom já está em uso. Escolha outro.");
 
   const [{ data: porCpf }, { data: porEmail }] = await Promise.all([
     db.from("parceiros").select("id").eq("cpf", d.cpf).maybeSingle(),
     db.from("parceiros").select("id").eq("email", d.email).maybeSingle(),
   ]);
-  if (porCpf) return erro("Já existe um cadastro com este CPF. Se for seu, entre no painel ou fale com a 99K.");
-  if (porEmail) return erro("Já existe um cadastro com este e-mail. Entre no painel com ele.");
+  if (porCpf) return erro("Já existe um cadastro com este CPF. Se for seu, fale com a 99K.");
+  if (porEmail) return erro("Já existe um cadastro com este e-mail.");
 
   let colecao = d.colecao;
   if (colecao) {
@@ -67,12 +59,10 @@ Deno.serve(async (req) => {
     if (!c) colecao = null;
   }
 
-  const { data: criado, error: e1 } = await db.auth.admin.createUser({
-    email: d.email, password: d.senha, email_confirm: true,
-  });
+  const { data: criado, error: e1 } = await db.auth.admin.createUser({ email: d.email, email_confirm: true });
   if (e1 || !criado?.user) {
     const msg = String(e1?.message ?? "");
-    if (/already|registered|exists/i.test(msg)) return erro("Este e-mail já tem acesso. Entre no painel com ele.");
+    if (/already|registered|exists/i.test(msg)) return erro("Este e-mail já tem cadastro. Se precisar de ajuda, fale com a 99K.");
     return erro("Não foi possível criar o acesso agora. Tente de novo em instantes.", 500);
   }
 
@@ -80,7 +70,7 @@ Deno.serve(async (req) => {
     id: criado.user.id,
     nome: d.nome, cpf: d.cpf, email: d.email, whatsapp: d.whatsapp, instagram: d.instagram,
     cep: d.cep, rua: d.rua, numero: d.numero, complemento: d.complemento, bairro: d.bairro, cidade: d.cidade, estado: d.estado,
-    chave_pix: d.pix, colecao_preferida: colecao, codigo_desejado: d.codigo,
+    colecao_preferida: colecao,
     status: "pendente", aceite_regras_em: new Date().toISOString(), versao_regras: d.versao,
   });
   if (e2) {
@@ -93,8 +83,8 @@ Deno.serve(async (req) => {
   const avisar = Deno.env.get("EMAIL_AVISO_LOJISTA");
   if (avisar) {
     await enviarEmail(avisar, `Novo cadastro de afiliado: ${d.nome}`, moldeEmail("Novo cadastro para analisar",
-      `<p><strong>${esc(d.nome)}</strong> (@${esc(d.instagram)}) se cadastrou e pediu o cupom <strong>${d.codigo}</strong>.</p>
-       <p><a href="${SITE_PARCEIROS}/admin.html" style="color:#004236">Abrir o painel do lojista</a></p>`));
+      `<p><strong>${esc(d.nome)}</strong> (@${esc(d.instagram)}) se cadastrou e está esperando análise.</p>
+       <p><a href="${SITE_PARCEIROS}/admin" style="color:#004236">Abrir o painel do lojista</a></p>`));
   }
 
   return json({ ok: true });

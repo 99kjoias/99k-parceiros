@@ -37,10 +37,6 @@
   @media (max-width: 760px) { .passos ol { grid-template-columns: 1fr; } }
 
   .cadastro { padding-top: 32px; }
-  .codigo-linha { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
-  .codigo-status { font-size: .875rem; }
-  .codigo-status.ok { color: var(--ok); }
-  .codigo-status.ruim { color: var(--erro); }
   .isca { position: absolute; left: -9999px; }
   .enviado { text-align: center; padding: 40px 24px; }
 </style>
@@ -74,9 +70,9 @@
 <section class="passos" aria-labelledby="como-funciona">
   <h2 id="como-funciona">Como funciona</h2>
   <ol>
-    <li><h3>Faça o seu cadastro</h3><p>Conte quem você é e escolha o código do seu cupom.</p></li>
-    <li><h3>Aguarde a análise</h3><p>A 99K olha o seu cadastro e responde por e-mail.</p></li>
-    <li><h3>Divulgue e acompanhe</h3><p>Com o cupom ativo, cada compra aparece no seu painel na hora.</p></li>
+    <li><h3>Faça o seu cadastro</h3><p>Conte quem você é e onde mora. Leva dois minutos.</p></li>
+    <li><h3>Aguarde a análise</h3><p>A 99K olha o seu cadastro e responde por e-mail ou WhatsApp.</p></li>
+    <li><h3>Ative e divulgue</h3><p>Aprovado, você escolhe o seu cupom, cadastra o Pix e acompanha cada venda no painel.</p></li>
   </ol>
 </section>
 
@@ -84,7 +80,7 @@
   <div class="estreita">
     <div class="caixa" id="caixa-form">
       <h2>Cadastro de afiliado</h2>
-      <p class="muted">Todos os campos são obrigatórios, menos complemento e coleção preferida.</p>
+      <p class="muted">Todos os campos são obrigatórios, menos complemento e coleção preferida. O código do cupom, a chave Pix e a senha você escolhe depois da aprovação.</p>
       <div id="aviso" class="aviso aviso-erro hidden" role="alert"></div>
 
       <form id="form" novalidate>
@@ -125,32 +121,10 @@
         </fieldset>
 
         <fieldset>
-          <legend>Seu cupom</legend>
-          <div class="campo">
-            <label for="codigo">Código que você quer</label>
-            <input id="codigo" name="codigo" autocomplete="off" maxlength="20" placeholder="Ex.: MARIA10" required>
-            <span class="dica">De 4 a 20 letras ou números, sem espaço nem acento.</span>
-            <div class="codigo-linha">
-              <div class="plaquinha vazia" id="previa"><span class="codigo" id="previa-codigo">SEUCODIGO</span></div>
-              <span class="codigo-status" id="codigo-status" aria-live="polite"></span>
-            </div>
-          </div>
+          <legend>Preferência</legend>
           <div class="campo">
             <label for="colecao">Coleção preferida</label>
             <select id="colecao" name="colecao"><option value="">Prefiro não escolher</option></select>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>Pagamento da comissão</legend>
-          <div class="campo"><label for="pix">Chave Pix</label><input id="pix" name="pix" autocomplete="off" required><span class="dica">CPF, e-mail, celular ou chave aleatória.</span></div>
-        </fieldset>
-
-        <fieldset>
-          <legend>Acesso ao painel</legend>
-          <div class="linha2">
-            <div class="campo"><label for="senha">Crie uma senha</label><input id="senha" name="senha" type="password" autocomplete="new-password" minlength="8" required><span class="dica">Mínimo de 8 caracteres.</span></div>
-            <div class="campo"><label for="senha2">Repita a senha</label><input id="senha2" name="senha2" type="password" autocomplete="new-password" minlength="8" required></div>
           </div>
         </fieldset>
 
@@ -165,11 +139,9 @@
     </div>
 
     <div class="caixa enviado hidden" id="caixa-ok">
-      <div class="plaquinha"><span class="codigo" id="ok-codigo"></span></div>
-      <h2 style="margin-top:24px">Cadastro enviado</h2>
-      <p>A 99K vai analisar o seu cadastro e responder no e-mail <strong id="ok-email"></strong>.</p>
-      <p class="muted">Enquanto isso, você já pode entrar no painel com o seu e-mail e a senha que criou para acompanhar a análise.</p>
-      <a class="btn btn-linha" href="entrar.html">Entrar no painel</a>
+      <h2>Cadastro enviado</h2>
+      <p>A 99K vai analisar o seu cadastro e responder no e-mail <strong id="ok-email"></strong> ou pelo WhatsApp.</p>
+      <p class="muted">Se for aprovado, você recebe um link para escolher o código do seu cupom, cadastrar a chave Pix e criar a senha do seu painel.</p>
     </div>
   </div>
 </main>
@@ -212,28 +184,6 @@
     } catch (_) { $("cep-dica").textContent = "Não deu para buscar o CEP. Preencha o endereço à mão."; }
   });
 
-  // Código do cupom: maiúsculas, prévia e conferência de disponibilidade
-  let codigoOk = false, timer;
-  $("codigo").addEventListener("input", () => {
-    const el = $("codigo");
-    el.value = el.value.toUpperCase().normalize("NFD").replace(/[^A-Z0-9]/g, "").slice(0, 20);
-    const v = el.value;
-    $("previa-codigo").textContent = v || "SEUCODIGO";
-    $("previa").classList.toggle("vazia", !v);
-    codigoOk = false;
-    const st = $("codigo-status"); st.className = "codigo-status"; st.textContent = "";
-    clearTimeout(timer);
-    if (v.length < 4) { if (v) st.textContent = "Use pelo menos 4 caracteres."; return; }
-    timer = setTimeout(async () => {
-      const { data, error } = await sb.rpc("codigo_disponivel", { p_codigo: v });
-      if ($("codigo").value !== v) return;
-      if (error) { st.textContent = ""; return; }
-      codigoOk = !!data;
-      st.classList.add(data ? "ok" : "ruim");
-      st.textContent = data ? "Código disponível." : "Esse código já está em uso. Escolha outro.";
-    }, 400);
-  });
-
   function cpfValido(c) {
     if (!/^\d{11}$/.test(c) || /^(\d)\1{10}$/.test(c)) return false;
     let s = 0; for (let i = 0; i < 9; i++) s += +c[i] * (10 - i);
@@ -265,10 +215,7 @@
       cep: soDigitos($("cep").value),
       rua: $("rua").value.trim(), numero: $("numero").value.trim(), complemento: $("complemento").value.trim(),
       bairro: $("bairro").value.trim(), cidade: $("cidade").value.trim(), estado: $("estado").value,
-      codigo: $("codigo").value.trim(),
       colecao: $("colecao").value || null,
-      pix: $("pix").value.trim(),
-      senha: $("senha").value,
       aceite: $("aceite").checked,
       versao_regras: window.PARCEIROS_CONFIG.versaoRegras,
       site: document.querySelector('input[name="site"]').value,
@@ -283,11 +230,6 @@
     if (d.cep.length !== 8) erros.push(["cep", "CEP com 8 números."]);
     ["rua", "numero", "bairro", "cidade"].forEach((k) => { if (!d[k]) erros.push([k, "Campo obrigatório."]); });
     if (!d.estado) erros.push(["estado", "Escolha o estado."]);
-    if (!/^[A-Z0-9]{4,20}$/.test(d.codigo)) erros.push(["codigo", "De 4 a 20 letras ou números."]);
-    else if (!codigoOk) erros.push(["codigo", "Escolha um código disponível."]);
-    if (d.pix.length < 5) erros.push(["pix", "Informe a chave Pix."]);
-    if (d.senha.length < 8) erros.push(["senha", "Mínimo de 8 caracteres."]);
-    if (d.senha !== $("senha2").value) erros.push(["senha2", "As senhas não são iguais."]);
     if (!d.aceite) erros.push(["aceite", ""]);
 
     if (erros.length) {
@@ -303,7 +245,6 @@
     const btn = $("enviar"); btn.disabled = true; btn.textContent = "Enviando...";
     try {
       await chamar("cadastro", d);
-      $("ok-codigo").textContent = d.codigo;
       $("ok-email").textContent = d.email;
       $("caixa-form").classList.add("hidden");
       $("caixa-ok").classList.remove("hidden");

@@ -141,6 +141,20 @@
   </div>
 </main>
 
+<dialog id="dlg-link">
+  <form class="caixa" method="dialog">
+    <h2>Aprovado: envie o link para <span id="dl-nome"></span></h2>
+    <p>Com este link, a pessoa escolhe o código do cupom, cadastra a chave Pix e cria a senha. Vale 14 dias e só funciona uma vez.</p>
+    <div class="campo"><label for="dl-url">Link de ativação</label><input id="dl-url" readonly></div>
+    <p class="small muted" id="dl-email"></p>
+    <div class="acoes-linha">
+      <a class="btn btn-primario" id="dl-whats" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>
+      <button class="btn btn-linha" type="button" id="dl-copiar">Copiar link</button>
+      <button class="btn btn-linha" value="fechar">Fechar</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="dlg">
   <form class="caixa" method="dialog" id="dlg-form">
     <h2 id="dlg-titulo"></h2>
@@ -237,7 +251,7 @@
       <dt>WhatsApp</dt><dd><a href="https://wa.me/55${esc(p.whatsapp)}" target="_blank" rel="noopener">${esc(p.whatsapp)}</a></dd>
       <dt>CPF</dt><dd>${esc(p.cpf)}</dd>
       <dt>Endereço</dt><dd>${end}</dd>
-      <dt>Chave Pix</dt><dd>${esc(p.chave_pix)}</dd>
+      <dt>Chave Pix</dt><dd>${p.chave_pix ? esc(p.chave_pix) : '<span class="muted">Cadastra na ativação</span>'}</dd>
       <dt>Coleção</dt><dd>${esc(p.colecao_preferida || "Não escolheu")}</dd>
       <dt>Cadastro</dt><dd>${dataHora.format(new Date(p.criado_em))}</dd>
     </dl>`;
@@ -253,25 +267,37 @@
     } else $("fila").innerHTML = "";
     $("fila").insertAdjacentHTML("beforeend", pend.map((p) => `
       <article class="cartao" data-id="${p.id}">
-        <div class="cartao-topo"><h3 style="margin:0">${esc(p.nome)}</h3><span class="small muted">Código pedido: <strong>${esc(p.codigo_desejado)}</strong></span></div>
+        <div class="cartao-topo"><h3 style="margin:0">${esc(p.nome)}</h3></div>
         ${dadosHtml(p)}
         <div class="acoes">
           <div class="campo"><label>Campanha</label><select class="sel-camp">${opcoesCampanha()}</select></div>
-          <div class="campo"><label>Código do cupom</label><input class="inp-cod" value="${esc(p.codigo_desejado)}" maxlength="20"></div>
           <button class="btn btn-primario btn-aprovar" type="button">Aprovar</button>
           <button class="btn btn-perigo btn-recusar" type="button">Recusar</button>
         </div>
       </article>`).join(""));
     $("fila").querySelectorAll(".cartao").forEach((card) => {
       const id = card.dataset.id;
-      card.querySelector(".inp-cod").oninput = (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20); };
-      card.querySelector(".btn-aprovar").onclick = (e) => acao({ acao: "aprovar", parceiro_id: id, campanha_id: card.querySelector(".sel-camp").value, codigo: card.querySelector(".inp-cod").value }, "Aprovado. O cupom já vale no site.", e.target);
+      card.querySelector(".btn-aprovar").onclick = async (e) => {
+        const p = parceira(id);
+        const r = await acao({ acao: "aprovar", parceiro_id: id, campanha_id: card.querySelector(".sel-camp").value }, "Aprovado.", e.target);
+        if (r) mostrarLink(p, r);
+      };
       card.querySelector(".btn-recusar").onclick = async (e) => {
         const p = parceira(id);
         if (await perguntar("Recusar cadastro", `<p>Recusar o cadastro de <strong>${esc(p.nome)}</strong>? A pessoa recebe um e-mail curto, sem motivo.</p>`, "Recusar", true))
           acao({ acao: "recusar", parceiro_id: id }, "Cadastro recusado.", e.target);
       };
     });
+  }
+
+  // Link de ativação depois de aprovar (copiar ou mandar pelo WhatsApp)
+  function mostrarLink(p, r) {
+    $("dl-nome").textContent = ((p && p.nome) || "").split(" ")[0];
+    $("dl-url").value = r.link;
+    $("dl-whats").href = r.whatsapp;
+    $("dl-email").textContent = r.email_enviado ? "O link também foi enviado por e-mail." : "O e-mail automático ainda não está ligado: mande pelo WhatsApp.";
+    $("dl-copiar").onclick = async () => { try { await navigator.clipboard.writeText(r.link); toast("Link copiado."); } catch (_) { $("dl-url").select(); } };
+    $("dlg-link").showModal();
   }
 
   // Parceiras
@@ -291,10 +317,14 @@
         <td>${cp ? `<strong>${esc(cp.codigo)}</strong><br><span class="etiqueta et-${cp.status}">${cp.status === "ativo" ? "Ativo" : cp.status === "pausado" ? "Pausado" : "Encerrado"}</span>` : "-"}</td>
         <td>${cam ? esc(cam.nome) : "-"}</td>
         <td class="num">${vs.length}</td><td class="num">${brl.format(soma("valor_base"))}</td><td class="num">${brl.format(soma("comissao_valor"))}</td>
-        <td><span class="etiqueta et-${p.status}">${nomeStatus[p.status]}</span></td>
+        <td>${p.status === "aprovada" && !p.ativado_em ? '<span class="etiqueta et-pendente">Aguardando ativação</span>' : `<span class="etiqueta et-${p.status}">${nomeStatus[p.status]}</span>`}</td>
       </tr>
       <tr class="detalhe hidden" data-det="${p.id}"><td colspan="7">${dadosHtml(p)}
-        ${p.status === "aprovada" ? `<div class="acoes-linha">
+        ${p.status === "aprovada" && !p.ativado_em ? `<div class="acoes-linha">
+          <button class="btn btn-primario btn-peq btn-link" type="button">Gerar novo link de ativação</button>
+          <button class="btn btn-perigo btn-peq btn-encerrar" type="button">Encerrar afiliação</button>
+        </div>` : ""}
+        ${p.status === "aprovada" && p.ativado_em ? `<div class="acoes-linha">
           <div class="campo" style="margin:0;min-width:220px"><label class="sr">Campanha</label><select class="sel-camp">${opcoesCampanha(p.campanha_id)}</select></div>
           <button class="btn btn-linha btn-peq btn-mover" type="button">Mudar campanha</button>
           ${cp && cp.status === "ativo" ? `<button class="btn btn-linha btn-peq btn-pausar" type="button">Pausar cupom</button>` : ""}
@@ -306,6 +336,10 @@
     tb.querySelectorAll("tr[data-id]").forEach((tr) => {
       const id = tr.dataset.id, det = tb.querySelector(`tr[data-det="${id}"]`);
       tr.querySelector(".ver").onclick = () => det.classList.toggle("hidden");
+      det.querySelector(".btn-link")?.addEventListener("click", async (e) => {
+        const r = await acao({ acao: "novo_link", parceiro_id: id }, "Link novo gerado. O anterior deixou de valer.", e.target);
+        if (r) mostrarLink(parceira(id), r);
+      });
       det.querySelector(".btn-mover")?.addEventListener("click", (e) => acao({ acao: "mudar_campanha", parceiro_id: id, campanha_id: det.querySelector(".sel-camp").value }, "Campanha alterada. O cupom no site já foi atualizado.", e.target));
       det.querySelector(".btn-pausar")?.addEventListener("click", (e) => acao({ acao: "pausar_cupom", parceiro_id: id }, "Cupom pausado no site.", e.target));
       det.querySelector(".btn-reativar")?.addEventListener("click", (e) => acao({ acao: "reativar_cupom", parceiro_id: id }, "Cupom reativado no site.", e.target));
