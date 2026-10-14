@@ -83,7 +83,7 @@ async function sincronizarColecoes(db: any) {
 
   const { data: atuais } = await db.from("colecoes").select("handle");
   const conhecidas = new Set((atuais ?? []).map((c: any) => c.handle));
-  const novas = lista.filter((c) => !conhecidas.has(c.handle)).map((c) => ({ handle: c.handle, titulo: c.title, ativa: true }));
+  const novas = lista.filter((c) => !conhecidas.has(c.handle)).map((c) => ({ handle: c.handle, titulo: c.title, ativa: false })) // coleção nova entra escondida; o lojista decide se aparece;
   if (novas.length) await db.from("colecoes").insert(novas);
   for (const c of lista.filter((c) => conhecidas.has(c.handle))) {
     await db.from("colecoes").update({ titulo: c.title }).eq("handle", c.handle);

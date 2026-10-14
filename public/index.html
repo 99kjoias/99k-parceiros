@@ -185,7 +185,7 @@
   $("regras").innerHTML = window.REGRAS_HTML;
 
   // Coleções disponíveis (vêm da Shopify, sincronizadas automaticamente)
-  sb.from("colecoes").select("handle,titulo").order("titulo").then(({ data }) => {
+  sb.from("colecoes").select("handle,titulo").order("ordem").order("titulo").then(({ data }) => {
     (data || []).forEach((c) => {
       const o = document.createElement("option"); o.value = c.handle; o.textContent = c.titulo; $("colecao").appendChild(o);
     });

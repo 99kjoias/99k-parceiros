@@ -132,7 +132,7 @@
 
     <!-- Coleções -->
     <section data-painel="colecoes" class="hidden">
-      <p class="muted">As coleções vêm da Shopify sozinhas. Escolha quais aparecem no campo "coleção preferida" do cadastro.</p>
+      <p class="muted">As coleções vêm da Shopify sozinhas. Coleção nova chega escondida: marque aqui as que aparecem no campo "coleção preferida" do cadastro.</p>
       <div class="tabela-wrap"><table>
         <thead><tr><th>Coleção</th><th>No cadastro</th></tr></thead>
         <tbody id="t-col"></tbody>
@@ -393,7 +393,7 @@
 
   // Coleções
   async function carregarColecoes() {
-    const { data } = await sb.from("colecoes").select("*").order("titulo");
+    const { data } = await sb.from("colecoes").select("*").order("ativa", { ascending: false }).order("ordem").order("titulo");
     const tb = $("t-col");
     if (!data || !data.length) { tb.innerHTML = `<tr><td colspan="2" class="vazio">As coleções aparecem aqui assim que a Shopify estiver ligada.</td></tr>`; return; }
     tb.innerHTML = data.map((c) => `<tr><td>${esc(c.titulo)}</td><td><label class="aceite"><input type="checkbox" data-h="${esc(c.handle)}" ${c.ativa ? "checked" : ""}> <span>${c.ativa ? "Aparece" : "Escondida"}</span></label></td></tr>`).join("");
