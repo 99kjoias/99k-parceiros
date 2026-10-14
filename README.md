@@ -1,7 +1,7 @@
 # Programa de Afiliados 99K
 
 Sistema próprio de afiliados (influenciadores e divulgadores) da 99K Joias, no lugar da Adzy.
-Endereço: https://parceiros.99kjoias.com.br
+Endereço: https://afiliados.99kjoias.com.br
 
 ## Páginas (pasta `public/`, publicadas pelo Cloudflare Pages a cada mudança neste repositório)
 
@@ -39,4 +39,4 @@ Rotinas no banco (pg_cron): conferência de hora em hora (minuto 17) e fechament
 
 ## Nomenclatura
 
-Nas telas e e-mails o nome é sempre **afiliado(s)** (decisão de Matheus, 14/10/2026). Os nomes internos do banco (tabela `parceiros`, coluna `parceiro_id`) e o endereço parceiros.99kjoias.com.br ficaram como estavam.
+Nas telas e e-mails o nome é sempre **afiliado(s)** (decisão de Matheus, 14/10/2026). Os nomes internos do banco (tabela `parceiros`, coluna `parceiro_id`) ficaram como estavam. Endereço oficial: afiliados.99kjoias.com.br (o antigo parceiros.99kjoias.com.br redireciona para ele).

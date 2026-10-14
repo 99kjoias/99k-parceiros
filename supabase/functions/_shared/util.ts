@@ -50,7 +50,7 @@ export function moldeEmail(titulo: string, corpo: string): string {
   </div></body></html>`;
 }
 
-export const SITE_PARCEIROS = Deno.env.get("SITE_PARCEIROS") ?? "https://parceiros.99kjoias.com.br";
+export const SITE_PARCEIROS = Deno.env.get("SITE_PARCEIROS") ?? "https://afiliados.99kjoias.com.br";
 
 export function esc(s: unknown): string {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
