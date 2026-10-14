@@ -102,10 +102,10 @@ async function avisarAprovacao(p: any, camp: any, token: string) {
      </ul>
      <p><strong>Como funciona:</strong></p>
      <ul style="padding-left:20px;margin:0 0 14px">
-       ${camp ? `<li>Quem compra no site com o seu cupom ganha <strong>${desc} de desconto</strong>, que soma com as promoções do site.</li>
-       <li>Você recebe <strong>${com} de comissão</strong> sobre o valor que a cliente pagou pelas peças, depois dos descontos e sem o frete.</li>` : ""}
+       ${camp ? `<li>Quem compra no site com o seu cupom ganha <strong>${desc} de desconto</strong>, em qualquer pedido.</li>
+       <li>Você recebe <strong>${com} de comissão</strong> sobre o valor do pedido (o valor do frete não entra nessa conta).</li>` : ""}
        <li>Cada venda aparece no seu painel na hora. Lá você também acompanha o ranking dos afiliados do mês.</li>
-       <li>O mês fecha no último dia, e a comissão é paga por Pix até o 5º dia útil do mês seguinte.</li>
+       <li>A comissão é paga no Pix até o 5º dia útil do mês seguinte.</li>
      </ul>
      <p>Ficou com dúvida? É só responder este e-mail.</p>`));
   const whatsapp = `https://wa.me/55${p.whatsapp}?text=${encodeURIComponent(mensagem)}`;
