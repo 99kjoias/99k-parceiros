@@ -74,6 +74,12 @@
         </div>
       </fieldset>
 
+      <fieldset>
+        <legend>Avisos de venda</legend>
+        <label class="aceite"><input type="checkbox" id="avisar-vendas" checked> <span>Aceito receber por e-mail um aviso a cada venda feita com o meu cupom.</span></label>
+        <p class="small muted" style="margin:8px 0 0">Você pode ligar ou desligar quando quiser no seu painel.</p>
+      </fieldset>
+
       <button class="btn btn-primario btn-largo" type="submit" id="ativar">Ativar meu cupom</button>
     </form>
   </div>
@@ -142,7 +148,7 @@
 
     const btn = $("ativar"); btn.disabled = true; btn.textContent = "Ativando...";
     try {
-      await chamar("ativar", { acao: "ativar", token, codigo, pix, senha });
+      await chamar("ativar", { acao: "ativar", token, codigo, pix, senha, avisar_vendas: $("avisar-vendas").checked });
       const { error } = await sb.auth.signInWithPassword({ email, password: senha });
       location.href = error ? "entrar" : "painel";
     } catch (err) {

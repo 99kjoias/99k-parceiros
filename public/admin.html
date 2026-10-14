@@ -98,14 +98,17 @@
     <!-- Fechamentos -->
     <section data-painel="fechamentos" class="hidden">
       <div class="barra-acoes">
-        <div class="campo"><label for="mes-fech" class="sr">Mês</label><select id="mes-fech"></select></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div class="campo"><label for="sit-fech" class="sr">Situação</label><select id="sit-fech"><option value="apagar">A pagar</option><option value="pago">Pagamento realizado</option><option value="">Todos</option></select></div>
+          <div class="campo"><label for="mes-fech" class="sr">Mês</label><select id="mes-fech"><option value="">Todos os meses</option></select></div>
+        </div>
         <span class="small muted" id="fech-total"></span>
       </div>
       <div class="tabela-wrap"><table>
-        <thead><tr><th>Afiliado</th><th>Chave Pix</th><th class="num">Pedidos</th><th class="num">Comissão</th><th class="num">Ajustes</th><th class="num">A pagar</th><th>Pagamento</th></tr></thead>
+        <thead><tr><th>Afiliado</th><th>Mês</th><th>Chave Pix</th><th class="num">Pedidos</th><th class="num">Comissão</th><th class="num">Ajustes</th><th class="num">A pagar</th><th>Pagamento</th><th>Comprovante</th></tr></thead>
         <tbody id="t-fech"></tbody>
       </table></div>
-      <p class="small muted" style="margin-top:8px">O mês fecha sozinho no último dia, à meia-noite de Brasília. O sistema só mostra os valores: o Pix é feito por vocês, e depois é só marcar como pago.</p>
+      <p class="small muted" style="margin-top:8px">O mês fecha sozinho no último dia, à meia-noite de Brasília. O sistema só mostra os valores: o Pix é feito por vocês. Depois, é só registrar o pagamento e anexar o comprovante, que o afiliado vê no painel dele.</p>
     </section>
 
     <!-- Campanhas -->
@@ -155,6 +158,18 @@
       <a class="btn btn-primario" id="dl-whats" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>
       <button class="btn btn-linha" type="button" id="dl-copiar">Copiar link</button>
       <button class="btn btn-linha" value="fechar">Fechar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-pagar">
+  <form class="caixa" id="dp-form" novalidate>
+    <h2 id="dp-titulo">Registrar pagamento</h2>
+    <p id="dp-resumo"></p>
+    <div class="campo"><label for="dp-arquivo">Comprovante do Pix</label><input id="dp-arquivo" type="file" accept="application/pdf,image/jpeg,image/png,image/webp"><span class="dica">PDF, JPG ou PNG, até 5 MB. O afiliado vê o comprovante no painel dele.</span></div>
+    <div class="acoes-linha">
+      <button class="btn btn-primario" type="submit" id="dp-ok">Confirmar pagamento</button>
+      <button class="btn btn-linha" type="button" id="dp-cancelar">Cancelar</button>
     </div>
   </form>
 </dialog>
@@ -219,8 +234,8 @@
     ultimosMeses(12).forEach((m) => {
       ["mes-vendas", "mes-fech"].forEach((id) => { const o = document.createElement("option"); o.value = m; o.textContent = rotuloMes(m); $(id).appendChild(o); });
     });
-    // Fechamentos: começa no mês passado (o que está para pagar)
-    if ($("mes-fech").options[1]) $("mes-fech").selectedIndex = 1;
+    // Fechamentos: começa mostrando tudo o que falta pagar, de todos os meses
+    $("sit-fech").onchange = carregarFechamentos;
     $("mes-vendas").onchange = carregarVendas;
     $("mes-fech").onchange = carregarFechamentos;
     $("filtro-status").onchange = desenharParceiras;
@@ -382,27 +397,83 @@
     if (silencioso !== true) desenharParceiras();
   }
 
-  // Fechamentos
+  // Fechamentos: a pagar e pagamento realizado, com comprovante do Pix
+  let fechLista = [];
   async function carregarFechamentos() {
-    const mes = $("mes-fech").value;
-    const { data } = await sb.from("fechamentos").select("*").eq("mes_ref", mes).order("comissao_total", { ascending: false });
+    const mes = $("mes-fech").value, sit = $("sit-fech").value;
+    let q = sb.from("fechamentos").select("*").order("mes_ref", { ascending: false }).order("comissao_total", { ascending: false });
+    if (mes) q = q.eq("mes_ref", mes);
+    if (sit) q = q.eq("pago", sit === "pago");
+    const { data } = await q;
     const tb = $("t-fech");
-    const lista = data || [];
-    const aPagar = lista.filter((f) => !f.pago).reduce((s, f) => s + Number(f.comissao_total), 0);
-    $("fech-total").textContent = lista.length ? `Falta pagar: ${brl.format(aPagar)}` : "";
+    const lista = fechLista = data || [];
+    const total = lista.reduce((s, f) => s + Number(f.comissao_total), 0);
+    $("fech-total").textContent = !lista.length ? "" : sit === "apagar" ? `Falta pagar: ${brl.format(total)}` : sit === "pago" ? `Total pago: ${brl.format(total)}` : `Total: ${brl.format(total)}`;
     if (!lista.length) {
-      tb.innerHTML = `<tr><td colspan="7" class="vazio">${mes === mesAtual() ? "Este mês ainda está aberto. Ele fecha no último dia." : "Nenhum fechamento neste mês."}</td></tr>`; return;
+      const msg = sit === "apagar" ? "Nenhum pagamento pendente." : mes === mesAtual() ? "Este mês ainda está aberto. Ele fecha no último dia." : "Nenhum fechamento aqui.";
+      tb.innerHTML = `<tr><td colspan="9" class="vazio">${msg}</td></tr>`; return;
     }
-    tb.innerHTML = lista.map((f) => { const p = parceira(f.parceiro_id) || {}; return `<tr>
+    tb.innerHTML = lista.map((f) => { const p = parceira(f.parceiro_id) || {}; return `<tr data-id="${f.id}">
       <td>${esc(p.nome || "-")}</td>
+      <td>${rotuloMes(f.mes_ref)}</td>
       <td>${esc(p.chave_pix || "-")} ${p.chave_pix ? `<button class="link copiar-pix" data-pix="${esc(p.chave_pix)}" type="button">copiar</button>` : ""}</td>
       <td class="num">${f.qtd_pedidos}</td><td class="num">${brl.format(f.comissao_vendas)}</td><td class="num">${Number(f.ajustes) ? brl.format(f.ajustes) : "-"}</td>
       <td class="num"><strong>${brl.format(f.comissao_total)}</strong></td>
-      <td>${f.pago ? `<span class="etiqueta et-pago">Pago em ${dataCurta.format(new Date(f.pago_em))}</span> <button class="link desmarcar" data-id="${f.id}" type="button">desfazer</button>`
-        : `<button class="btn btn-primario btn-peq marcar" data-id="${f.id}" type="button">Marcar como pago</button>`}</td></tr>`; }).join("");
+      <td>${f.pago ? `<span class="etiqueta et-pago">Pago em ${dataCurta.format(new Date(f.pago_em))}</span> <button class="link desmarcar" type="button">desfazer</button>`
+        : `<span class="etiqueta et-apagar">A pagar</span> <button class="btn btn-primario btn-peq pagar" type="button">Registrar pagamento</button>`}</td>
+      <td>${f.comprovante_path ? `<button class="link ver-comp" type="button">Ver</button> · <button class="link anexar" type="button">trocar</button>`
+        : f.pago ? `<button class="link anexar" type="button">Anexar comprovante</button>` : "-"}</td></tr>`; }).join("");
+    const doBotao = (b) => fechLista.find((f) => f.id === b.closest("tr").dataset.id);
     tb.querySelectorAll(".copiar-pix").forEach((b) => b.onclick = async () => { await navigator.clipboard.writeText(b.dataset.pix); toast("Chave Pix copiada."); });
-    tb.querySelectorAll(".marcar").forEach((b) => b.onclick = () => acao({ acao: "marcar_pago", fechamento_id: b.dataset.id, pago: true }, "Marcado como pago.", b));
-    tb.querySelectorAll(".desmarcar").forEach((b) => b.onclick = () => acao({ acao: "marcar_pago", fechamento_id: b.dataset.id, pago: false }, "Pagamento desmarcado.", b));
+    tb.querySelectorAll(".pagar").forEach((b) => b.onclick = () => abrirPagamento(doBotao(b), true));
+    tb.querySelectorAll(".anexar").forEach((b) => b.onclick = () => abrirPagamento(doBotao(b), false));
+    tb.querySelectorAll(".ver-comp").forEach((b) => b.onclick = () => abrirComprovante(doBotao(b).comprovante_path));
+    tb.querySelectorAll(".desmarcar").forEach((b) => b.onclick = async () => {
+      const f = doBotao(b);
+      if (await perguntar("Voltar para a pagar", `<p>O pagamento de <strong>${esc((parceira(f.parceiro_id) || {}).nome || "")}</strong> (${rotuloMes(f.mes_ref)}) volta para "A pagar" e o comprovante sai do painel do afiliado.</p>`, "Voltar para a pagar", true))
+        acao({ acao: "marcar_pago", fechamento_id: f.id, pago: false }, "Voltou para a pagar.", b);
+    });
+  }
+
+  let fechEmPagamento = null, registrarPago = true;
+  function abrirPagamento(f, pagar) {
+    fechEmPagamento = f; registrarPago = pagar;
+    const p = parceira(f.parceiro_id) || {};
+    $("dp-titulo").textContent = pagar ? "Registrar pagamento" : "Comprovante do pagamento";
+    $("dp-resumo").innerHTML = `<strong>${esc(p.nome || "")}</strong>, ${rotuloMes(f.mes_ref)}: ${brl.format(f.comissao_total)}${p.chave_pix ? `<br><span class="small muted">Pix: ${esc(p.chave_pix)}</span>` : ""}`;
+    $("dp-ok").textContent = pagar ? "Confirmar pagamento" : "Salvar comprovante";
+    $("dp-arquivo").value = "";
+    $("dlg-pagar").showModal();
+  }
+  $("dp-cancelar").onclick = () => $("dlg-pagar").close();
+  $("dp-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const f = fechEmPagamento, arq = $("dp-arquivo").files[0], btn = $("dp-ok");
+    const tipos = { "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+    if (!arq && !registrarPago) return toast("Escolha o arquivo do comprovante.", true);
+    if (arq && !tipos[arq.type]) return toast("O comprovante precisa ser PDF, JPG ou PNG.", true);
+    if (arq && arq.size > 5 * 1024 * 1024) return toast("O arquivo passa de 5 MB. Mande um menor.", true);
+    btn.disabled = true;
+    try {
+      const corpo = { acao: "marcar_pago", fechamento_id: f.id };
+      if (registrarPago) corpo.pago = true;
+      if (arq) {
+        const caminho = `${f.parceiro_id}/${f.mes_ref.slice(0, 7)}-${Date.now()}.${tipos[arq.type]}`;
+        const { error } = await sb.storage.from("comprovantes").upload(caminho, arq, { contentType: arq.type, upsert: false });
+        if (error) throw new Error("Não deu para enviar o comprovante. Tente de novo.");
+        corpo.comprovante = caminho;
+      }
+      $("dlg-pagar").close();
+      await acao(corpo, registrarPago ? (arq ? "Pagamento registrado com comprovante." : "Pagamento registrado. Dá para anexar o comprovante depois.") : "Comprovante salvo.");
+    } catch (err) { toast(err.message, true); }
+    finally { btn.disabled = false; }
+  };
+
+  async function abrirComprovante(caminho) {
+    const janela = window.open("", "_blank");
+    const { data, error } = await sb.storage.from("comprovantes").createSignedUrl(caminho, 300);
+    if (error || !data) { if (janela) janela.close(); toast("Não deu para abrir o comprovante agora.", true); return; }
+    if (janela) janela.location.href = data.signedUrl; else location.href = data.signedUrl;
   }
 
   // Campanhas

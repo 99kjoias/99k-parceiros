@@ -192,10 +192,29 @@ async function salvarCampanha(db: any, b: any) {
   return { ok: true, cupons_atualizados: atualizados };
 }
 
+// Pagamento do fechamento: "a pagar" ou "pagamento realizado", com o comprovante do Pix (PDF ou imagem).
+// O arquivo é enviado pelo painel do lojista para a pasta privada "comprovantes", em <id do afiliado>/<arquivo>.
 async function marcarPago(db: any, b: any) {
-  const { error } = await db.from("fechamentos")
-    .update({ pago: !!b.pago, pago_em: b.pago ? new Date().toISOString() : null })
-    .eq("id", b.fechamento_id);
+  const { data: f } = await db.from("fechamentos").select("id,parceiro_id,pago,pago_em").eq("id", b.fechamento_id).maybeSingle();
+  if (!f) throw new Error("Fechamento não encontrado.");
+
+  const mudanca: Record<string, unknown> = {};
+  if (b.comprovante !== undefined) {
+    const caminho = String(b.comprovante ?? "");
+    if (caminho) {
+      const [pasta, arquivo] = caminho.split("/");
+      if (pasta !== f.parceiro_id || !arquivo || caminho.split("/").length !== 2) throw new Error("Comprovante inválido.");
+      const { data: lista } = await db.storage.from("comprovantes").list(pasta, { search: arquivo, limit: 1 });
+      if (!lista?.some((o: any) => o.name === arquivo)) throw new Error("O comprovante não chegou. Anexe de novo.");
+    }
+    mudanca.comprovante_path = caminho || null;
+  }
+  if (b.pago !== undefined) {
+    mudanca.pago = !!b.pago;
+    mudanca.pago_em = b.pago ? (f.pago && f.pago_em ? f.pago_em : new Date().toISOString()) : null;
+    if (!b.pago) mudanca.comprovante_path = null;
+  }
+  const { error } = await db.from("fechamentos").update(mudanca).eq("id", f.id);
   if (error) throw error;
   return { ok: true };
 }

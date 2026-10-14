@@ -113,10 +113,15 @@
       <h2 id="t-fech">Meses fechados</h2>
       <div class="tabela-wrap">
         <table>
-          <thead><tr><th>Mês</th><th class="num">Pedidos</th><th class="num">Comissão</th><th class="num">Ajustes</th><th class="num">A receber</th><th>Pagamento</th></tr></thead>
+          <thead><tr><th>Mês</th><th class="num">Pedidos</th><th class="num">Comissão</th><th class="num">Ajustes</th><th class="num">A receber</th><th>Pagamento</th><th>Comprovante</th></tr></thead>
           <tbody id="fechamentos"></tbody>
         </table>
       </div>
+    </section>
+
+    <section class="secao" aria-labelledby="t-avisos" id="sec-avisos">
+      <h2 id="t-avisos">Avisos por e-mail</h2>
+      <label class="aceite"><input type="checkbox" id="avisar-vendas"> <span>Aceito receber por e-mail um aviso a cada venda feita com o meu cupom.</span></label>
     </section>
     </div>
   </div>
@@ -140,7 +145,7 @@
     if (!session) { location.href = "entrar.html"; return; }
     eu = session.user;
 
-    const { data: p, error } = await sb.from("parceiros").select("nome,status,campanha_id,email").eq("id", eu.id).maybeSingle();
+    const { data: p, error } = await sb.from("parceiros").select("nome,status,campanha_id,email,avisar_vendas").eq("id", eu.id).maybeSingle();
     $("carregando").classList.add("hidden");
     if (error || !p) {
       const { data: admin } = await sb.rpc("is_admin");
@@ -165,6 +170,16 @@
     }
     if (camp) $("condicoes").textContent = `Quem compra ganha ${fmtPct(camp.desconto_pct)} de desconto. Você recebe ${fmtPct(camp.comissao_pct)} de comissão.`;
 
+    const av = $("avisar-vendas");
+    av.checked = !!p.avisar_vendas;
+    av.onchange = async () => {
+      av.disabled = true;
+      const { error: e } = await sb.rpc("definir_aviso_vendas", { p_ativo: av.checked });
+      av.disabled = false;
+      if (e) { av.checked = !av.checked; toast("Não deu para salvar agora. Tente de novo.", true); return; }
+      toast(av.checked ? "Pronto: você vai receber um e-mail a cada venda." : "Pronto: os avisos de venda foram desligados.");
+    };
+
     ultimosMeses(12).forEach((m) => { const o = document.createElement("option"); o.value = m; o.textContent = rotuloMes(m); $("mes").appendChild(o); });
     $("mes").onchange = carregarMes;
     ultimosMeses(12).forEach((m) => { const o = document.createElement("option"); o.value = m; o.textContent = rotuloMes(m); $("mes-rank").appendChild(o); });
@@ -187,6 +202,7 @@
     // Tempo real: qualquer venda nova ou mudança atualiza o painel
     sb.channel("minhas-vendas")
       .on("postgres_changes", { event: "*", schema: "public", table: "vendas", filter: `parceiro_id=eq.${eu.id}` }, () => { carregarMes(); carregarFechamentos(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "fechamentos", filter: `parceiro_id=eq.${eu.id}` }, carregarFechamentos)
       .subscribe();
     setInterval(carregarMes, 120000);
   }
@@ -201,6 +217,7 @@
       document.querySelector(".barra-acoes").classList.add("hidden");
       document.querySelector(".numeros").classList.add("hidden");
       $("t-vendas").parentElement.classList.add("hidden");
+      $("sec-avisos").classList.add("hidden");
       carregarFechamentos();
     }
   }
@@ -261,10 +278,10 @@
 
   async function carregarFechamentos() {
     const { data } = await sb.from("fechamentos")
-      .select("mes_ref,qtd_pedidos,comissao_vendas,ajustes,comissao_total,pago,pago_em")
+      .select("mes_ref,qtd_pedidos,comissao_vendas,ajustes,comissao_total,pago,pago_em,comprovante_path")
       .eq("parceiro_id", eu.id).order("mes_ref", { ascending: false });
     const tb = $("fechamentos");
-    if (!data || !data.length) { tb.innerHTML = `<tr><td colspan="6" class="vazio">O primeiro fechamento acontece no último dia do mês.</td></tr>`; return; }
+    if (!data || !data.length) { tb.innerHTML = `<tr><td colspan="7" class="vazio">O primeiro fechamento acontece no último dia do mês.</td></tr>`; return; }
     tb.innerHTML = data.map((f) => `
       <tr>
         <td>${rotuloMes(f.mes_ref)}</td>
@@ -273,7 +290,17 @@
         <td class="num">${Number(f.ajustes) ? brl.format(f.ajustes) : "-"}</td>
         <td class="num"><strong>${brl.format(f.comissao_total)}</strong></td>
         <td>${f.pago ? `<span class="etiqueta et-pago">Pago${f.pago_em ? " em " + dataCurta.format(new Date(f.pago_em)) : ""}</span>` : `<span class="etiqueta et-apagar">A pagar</span>`}</td>
+        <td>${f.pago && f.comprovante_path ? `<button class="link ver-comp" type="button" data-path="${esc(f.comprovante_path)}">Ver comprovante</button>` : "-"}</td>
       </tr>`).join("");
+    tb.querySelectorAll(".ver-comp").forEach((b) => b.onclick = () => abrirComprovante(b.dataset.path));
+  }
+
+  // Abre o comprovante do Pix (link temporário, só para o próprio afiliado)
+  async function abrirComprovante(caminho) {
+    const janela = window.open("", "_blank");
+    const { data, error } = await sb.storage.from("comprovantes").createSignedUrl(caminho, 300);
+    if (error || !data) { if (janela) janela.close(); toast("Não deu para abrir o comprovante agora.", true); return; }
+    if (janela) janela.location.href = data.signedUrl; else location.href = data.signedUrl;
   }
 
   iniciar();

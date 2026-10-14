@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
 
   // 4) conclui a ativação (o link deixa de valer)
   await db.from("parceiros").update({
-    codigo_desejado: codigo, chave_pix: pix, ativado_em: new Date().toISOString(),
+    codigo_desejado: codigo, chave_pix: pix, ativado_em: new Date().toISOString(), avisar_vendas: b.avisar_vendas === true,
     ativacao_hash: null, ativacao_expira: null,
   }).eq("id", p.id);
 
