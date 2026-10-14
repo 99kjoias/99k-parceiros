@@ -1,4 +1,4 @@
-// Cadastro de parceira (página pública). Cria o login e o cadastro em análise.
+// Cadastro de afiliado (página pública). Cria o login e o cadastro em análise.
 import { adminDb, cors, erro, json, enviarEmail, moldeEmail, esc, SITE_PARCEIROS } from "../_shared/util.ts";
 
 const so = (s: unknown) => String(s ?? "").trim();
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
   // Aviso para a 99K (se o e-mail estiver configurado)
   const avisar = Deno.env.get("EMAIL_AVISO_LOJISTA");
   if (avisar) {
-    await enviarEmail(avisar, `Novo cadastro de parceira: ${d.nome}`, moldeEmail("Novo cadastro para analisar",
+    await enviarEmail(avisar, `Novo cadastro de afiliado: ${d.nome}`, moldeEmail("Novo cadastro para analisar",
       `<p><strong>${esc(d.nome)}</strong> (@${esc(d.instagram)}) se cadastrou e pediu o cupom <strong>${d.codigo}</strong>.</p>
        <p><a href="${SITE_PARCEIROS}/admin.html" style="color:#004236">Abrir o painel do lojista</a></p>`));
   }

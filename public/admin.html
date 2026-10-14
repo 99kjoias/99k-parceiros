@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lojista | Parceiros 99K</title>
+<title>Lojista | Afiliados 99K</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,21 +29,21 @@
 <body>
 <header class="topo">
   <div class="topo-in">
-    <a class="marca" href="admin.html">99K <span>Parceiros</span></a>
+    <a class="marca" href="admin.html">99K <span>Afiliados</span></a>
     <button class="link-topo" id="sair" type="button">Sair</button>
   </div>
 </header>
 
 <main class="pagina">
   <p id="carregando" class="muted">Carregando...</p>
-  <div id="sem-acesso" class="caixa hidden"><h1 style="font-size:2rem">Acesso de lojista</h1><p>Este login não tem acesso ao painel de lojista.</p><a class="btn btn-linha" href="painel.html">Ir para o painel de parceira</a></div>
+  <div id="sem-acesso" class="caixa hidden"><h1 style="font-size:2rem">Acesso de lojista</h1><p>Este login não tem acesso ao painel de lojista.</p><a class="btn btn-linha" href="painel.html">Ir para o painel de afiliado</a></div>
 
   <div id="app" class="hidden">
     <div class="titulo"><h1>Painel do lojista</h1><span class="small muted" id="atualizado"></span></div>
 
     <nav class="abas" role="tablist">
       <button role="tab" data-aba="cadastros" aria-selected="true">Cadastros <span class="contador hidden" id="c-pend"></span></button>
-      <button role="tab" data-aba="parceiras" aria-selected="false">Parceiras</button>
+      <button role="tab" data-aba="parceiras" aria-selected="false">Afiliados</button>
       <button role="tab" data-aba="vendas" aria-selected="false">Vendas</button>
       <button role="tab" data-aba="fechamentos" aria-selected="false">Fechamentos</button>
       <button role="tab" data-aba="campanhas" aria-selected="false">Campanhas</button>
@@ -59,12 +59,12 @@
     <section data-painel="parceiras" class="hidden">
       <div class="barra-acoes">
         <div class="campo"><label for="filtro-status" class="sr">Situação</label>
-          <select id="filtro-status"><option value="aprovada">Ativas</option><option value="encerrada">Encerradas</option><option value="recusada">Recusadas</option><option value="">Todas</option></select>
+          <select id="filtro-status"><option value="aprovada">Ativos</option><option value="encerrada">Encerrados</option><option value="recusada">Recusados</option><option value="">Todos</option></select>
         </div>
         <span class="small muted">Vendas e comissão do mês atual</span>
       </div>
       <div class="tabela-wrap"><table>
-        <thead><tr><th>Parceira</th><th>Cupom</th><th>Campanha</th><th class="num">Pedidos</th><th class="num">Vendas</th><th class="num">Comissão</th><th></th></tr></thead>
+        <thead><tr><th>Afiliado</th><th>Cupom</th><th>Campanha</th><th class="num">Pedidos</th><th class="num">Vendas</th><th class="num">Comissão</th><th></th></tr></thead>
         <tbody id="t-parceiras"></tbody>
       </table></div>
     </section>
@@ -79,9 +79,9 @@
         <div class="numero"><div class="rotulo">Vendas com cupom</div><div class="valor" id="v-vendas">R$ 0,00</div></div>
         <div class="numero"><div class="rotulo">Pedidos</div><div class="valor" id="v-pedidos">0</div></div>
       </div>
-      <h2>Por parceira</h2>
+      <h2>Por afiliado</h2>
       <div class="tabela-wrap" style="margin-bottom:28px"><table>
-        <thead><tr><th>Parceira</th><th>Cupom</th><th class="num">Pedidos</th><th class="num">Vendas</th><th class="num">Comissão</th></tr></thead>
+        <thead><tr><th>Afiliado</th><th>Cupom</th><th class="num">Pedidos</th><th class="num">Vendas</th><th class="num">Comissão</th></tr></thead>
         <tbody id="t-ranking"></tbody>
       </table></div>
       <h2>Pedidos</h2>
@@ -98,7 +98,7 @@
         <span class="small muted" id="fech-total"></span>
       </div>
       <div class="tabela-wrap"><table>
-        <thead><tr><th>Parceira</th><th>Chave Pix</th><th class="num">Pedidos</th><th class="num">Comissão</th><th class="num">Ajustes</th><th class="num">A pagar</th><th>Pagamento</th></tr></thead>
+        <thead><tr><th>Afiliado</th><th>Chave Pix</th><th class="num">Pedidos</th><th class="num">Comissão</th><th class="num">Ajustes</th><th class="num">A pagar</th><th>Pagamento</th></tr></thead>
         <tbody id="t-fech"></tbody>
       </table></div>
       <p class="small muted" style="margin-top:8px">O mês fecha sozinho no último dia, à meia-noite de Brasília. O sistema só mostra os valores: o Pix é feito por vocês, e depois é só marcar como pago.</p>
@@ -107,14 +107,14 @@
     <!-- Campanhas -->
     <section data-painel="campanhas" class="hidden">
       <div class="tabela-wrap" style="margin-bottom:24px"><table>
-        <thead><tr><th>Campanha</th><th class="num">Desconto do cupom</th><th class="num">Comissão</th><th class="num">Parceiras</th><th>Situação</th><th></th></tr></thead>
+        <thead><tr><th>Campanha</th><th class="num">Desconto do cupom</th><th class="num">Comissão</th><th class="num">Afiliados</th><th>Situação</th><th></th></tr></thead>
         <tbody id="t-camp"></tbody>
       </table></div>
       <form class="caixa" id="f-camp">
         <h2 id="f-camp-titulo">Nova campanha</h2>
         <input type="hidden" id="camp-id">
         <div class="form-camp">
-          <div class="campo"><label for="camp-nome">Nome</label><input id="camp-nome" required placeholder="Ex.: Parceiras padrão"></div>
+          <div class="campo"><label for="camp-nome">Nome</label><input id="camp-nome" required placeholder="Ex.: Afiliados padrão"></div>
           <div class="campo"><label for="camp-desc">Desconto (%)</label><input id="camp-desc" type="number" min="0" max="100" step="0.5" required></div>
           <div class="campo"><label for="camp-com">Comissão (%)</label><input id="camp-com" type="number" min="0" max="100" step="0.5" required></div>
         </div>
@@ -122,7 +122,7 @@
           <label><input type="checkbox" id="camp-padrao"> Campanha padrão na aprovação</label>
           <label><input type="checkbox" id="camp-ativa" checked> Ativa</label>
         </div>
-        <p class="small muted">Mudar o desconto atualiza na hora os cupons das parceiras dessa campanha no site. Mudar a comissão vale para as vendas novas.</p>
+        <p class="small muted">Mudar o desconto atualiza na hora os cupons dos afiliados dessa campanha no site. Mudar a comissão vale para as vendas novas.</p>
         <div class="acoes-linha">
           <button class="btn btn-primario" type="submit" id="camp-salvar">Salvar campanha</button>
           <button class="btn btn-linha hidden" type="button" id="camp-cancelar">Cancelar edição</button>
@@ -161,7 +161,7 @@
   const $ = (id) => document.getElementById(id);
   const S = { parceiros: [], cupons: [], campanhas: [], vendasMes: [] };
   const pct = (n) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
-  const nomeStatus = { pendente: "Em análise", aprovada: "Ativa", recusada: "Recusada", encerrada: "Encerrada" };
+  const nomeStatus = { pendente: "Em análise", aprovada: "Ativo", recusada: "Recusado", encerrada: "Encerrado" };
 
   $("sair").onclick = async () => { await sb.auth.signOut(); location.href = "entrar.html"; };
 
@@ -265,10 +265,10 @@
     $("fila").querySelectorAll(".cartao").forEach((card) => {
       const id = card.dataset.id;
       card.querySelector(".inp-cod").oninput = (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20); };
-      card.querySelector(".btn-aprovar").onclick = (e) => acao({ acao: "aprovar", parceiro_id: id, campanha_id: card.querySelector(".sel-camp").value, codigo: card.querySelector(".inp-cod").value }, "Aprovada. O cupom já vale no site.", e.target);
+      card.querySelector(".btn-aprovar").onclick = (e) => acao({ acao: "aprovar", parceiro_id: id, campanha_id: card.querySelector(".sel-camp").value, codigo: card.querySelector(".inp-cod").value }, "Aprovado. O cupom já vale no site.", e.target);
       card.querySelector(".btn-recusar").onclick = async (e) => {
         const p = parceira(id);
-        if (await perguntar("Recusar cadastro", `<p>Recusar o cadastro de <strong>${esc(p.nome)}</strong>? Ela recebe um e-mail curto, sem motivo.</p>`, "Recusar", true))
+        if (await perguntar("Recusar cadastro", `<p>Recusar o cadastro de <strong>${esc(p.nome)}</strong>? A pessoa recebe um e-mail curto, sem motivo.</p>`, "Recusar", true))
           acao({ acao: "recusar", parceiro_id: id }, "Cadastro recusado.", e.target);
       };
     });
@@ -281,7 +281,7 @@
     const mesAt = mesAtual();
     const doMes = S.vendasMes.filter((v) => v.mes_ref === mesAt && v.situacao === "valida");
     const tb = $("t-parceiras");
-    if (!lista.length) { tb.innerHTML = `<tr><td colspan="7" class="vazio">Nenhuma parceira aqui ainda.</td></tr>`; return; }
+    if (!lista.length) { tb.innerHTML = `<tr><td colspan="7" class="vazio">Nenhum afiliado aqui ainda.</td></tr>`; return; }
     tb.innerHTML = lista.map((p) => {
       const cp = cupomDe(p.id), cam = campanha(p.campanha_id);
       const vs = doMes.filter((v) => v.parceiro_id === p.id);
@@ -299,7 +299,7 @@
           <button class="btn btn-linha btn-peq btn-mover" type="button">Mudar campanha</button>
           ${cp && cp.status === "ativo" ? `<button class="btn btn-linha btn-peq btn-pausar" type="button">Pausar cupom</button>` : ""}
           ${cp && cp.status === "pausado" ? `<button class="btn btn-linha btn-peq btn-reativar" type="button">Reativar cupom</button>` : ""}
-          <button class="btn btn-perigo btn-peq btn-encerrar" type="button">Encerrar parceria</button>
+          <button class="btn btn-perigo btn-peq btn-encerrar" type="button">Encerrar afiliação</button>
         </div>` : ""}
       </td></tr>`;
     }).join("");
@@ -310,8 +310,8 @@
       det.querySelector(".btn-pausar")?.addEventListener("click", (e) => acao({ acao: "pausar_cupom", parceiro_id: id }, "Cupom pausado no site.", e.target));
       det.querySelector(".btn-reativar")?.addEventListener("click", (e) => acao({ acao: "reativar_cupom", parceiro_id: id }, "Cupom reativado no site.", e.target));
       det.querySelector(".btn-encerrar")?.addEventListener("click", async (e) => {
-        if (await perguntar("Encerrar parceria", `<p>O cupom de <strong>${esc(parceira(id).nome)}</strong> deixa de valer no site agora. As vendas e os fechamentos dela continuam guardados.</p>`, "Encerrar", true))
-          acao({ acao: "encerrar", parceiro_id: id }, "Parceria encerrada e cupom desativado.", e.target);
+        if (await perguntar("Encerrar afiliação", `<p>O cupom de <strong>${esc(parceira(id).nome)}</strong> deixa de valer no site agora. As vendas e os fechamentos continuam guardados.</p>`, "Encerrar", true))
+          acao({ acao: "encerrar", parceiro_id: id }, "Afiliação encerrada e cupom desativado.", e.target);
       });
     });
   }
@@ -332,7 +332,7 @@
     val.forEach((v) => { (porP[v.parceiro_id] ||= []).push(v); });
     const rank = Object.entries(porP).sort((a, b) => soma(b[1], "valor_base") - soma(a[1], "valor_base"));
     $("t-ranking").innerHTML = rank.length ? rank.map(([pid, vs]) => `<tr><td>${esc(parceira(pid)?.nome || "-")}</td><td>${esc(vs[0].cupom_codigo)}</td><td class="num">${vs.length}</td><td class="num">${brl.format(soma(vs, "valor_base"))}</td><td class="num">${brl.format(soma(vs, "comissao_valor"))}</td></tr>`).join("")
-      : `<tr><td colspan="5" class="vazio">Nenhuma venda com cupom de parceira neste mês.</td></tr>`;
+      : `<tr><td colspan="5" class="vazio">Nenhuma venda com cupom de afiliado neste mês.</td></tr>`;
     $("t-vendas").innerHTML = doMes.length ? doMes.map((v) => `<tr class="${v.situacao === "cancelada" ? "cancelada" : ""}"><td>${dataHora.format(new Date(v.data_pedido))}</td><td>${esc(v.pedido_numero)}</td><td>${esc(v.cupom_codigo)}</td><td class="num">${brl.format(v.valor_base)}</td><td class="num">${brl.format(v.comissao_valor)}</td><td><span class="etiqueta et-${v.situacao}">${v.situacao === "cancelada" ? "Cancelado" : "Confirmado"}</span></td></tr>`).join("")
       : `<tr><td colspan="6" class="vazio">Nenhum pedido neste mês.</td></tr>`;
     if (silencioso !== true) desenharParceiras();

@@ -40,11 +40,11 @@ function erroUsuario(res: { userErrors?: { message: string }[] } | undefined) {
   if (res?.userErrors?.length) throw new Error("Shopify: " + res.userErrors.map((e) => e.message).join("; "));
 }
 
-// Cupom da parceira: desconto em % sobre o pedido, para todos os clientes,
+// Cupom do afiliado: desconto em % sobre o pedido, para todos os clientes,
 // combina com descontos de produto (desconto progressivo) e de frete, não combina com outro cupom de pedido.
 function entradaCupom(codigo: string, descontoPct: number, extra: Record<string, unknown> = {}) {
   return {
-    title: `Parceiros 99K: ${codigo}`,
+    title: `Afiliados 99K: ${codigo}`,
     code: codigo,
     context: { all: "ALL" },
     customerGets: { value: { percentage: Math.round(descontoPct * 100) / 10000 }, items: { all: true } },

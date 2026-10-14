@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Meu painel | Parceiros 99K</title>
+<title>Meu painel | Afiliados 99K</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
 <body>
 <header class="topo">
   <div class="topo-in">
-    <a class="marca" href="./">99K <span>Parceiros</span></a>
+    <a class="marca" href="./">99K <span>Afiliados</span></a>
     <button class="link-topo" id="sair" type="button">Sair</button>
   </div>
 </header>
@@ -107,13 +107,13 @@
     if (error || !p) {
       const { data: admin } = await sb.rpc("is_admin");
       if (admin) { location.href = "admin.html"; return; }
-      mostrarEstado("Cadastro não encontrado", "Não achamos um cadastro de parceira para este login. Se você acabou de se cadastrar, espere um minuto e entre de novo.");
+      mostrarEstado("Cadastro não encontrado", "Não achamos um cadastro de afiliado para este login. Se você acabou de se cadastrar, espere um minuto e entre de novo.");
       return;
     }
     const primeiro = esc(p.nome.split(" ")[0]);
     if (p.status === "pendente") return mostrarEstado(`${primeiro}, seu cadastro está em análise`, `A 99K vai olhar o seu cadastro e responder no e-mail ${esc(p.email)}. Quando for aprovado, o seu cupom aparece aqui.`);
     if (p.status === "recusada") return mostrarEstado(`${primeiro}, obrigado pelo interesse`, "Neste momento o seu cadastro não foi aprovado para o programa.");
-    if (p.status === "encerrada") return mostrarEstado(`${primeiro}, sua parceria foi encerrada`, "O seu cupom não está mais ativo. Os meses já fechados continuam abaixo.", true);
+    if (p.status === "encerrada") return mostrarEstado(`${primeiro}, sua afiliação foi encerrada`, "O seu cupom não está mais ativo. Os meses já fechados continuam abaixo.", true);
 
     $("nome").textContent = p.nome.split(" ")[0];
     const [{ data: cupom }, { data: camp }] = await Promise.all([

@@ -1,4 +1,4 @@
-// Funções compartilhadas pelas páginas do Programa de Parceiros 99K
+// Funções compartilhadas pelas páginas do Programa de Afiliados 99K
 (function () {
   const cfg = window.PARCEIROS_CONFIG;
   const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {

@@ -1,6 +1,6 @@
-// Configuração pública do Programa de Parceiros 99K.
+// Configuração pública do Programa de Afiliados 99K.
 // A chave abaixo é a chave publicável do Supabase: foi feita para ficar no navegador.
-// O que protege os dados são as permissões do banco (cada parceira só vê o que é dela).
+// O que protege os dados são as permissões do banco (cada afiliado só vê o que é dele).
 window.PARCEIROS_CONFIG = {
   supabaseUrl: "https://fbedndukcrnnlssqkkez.supabase.co",
   supabaseKey: "sb_publishable_Fck50SbIbiLiQYosCO0_jQ_7PyhZZaQ",

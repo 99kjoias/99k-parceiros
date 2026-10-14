@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
 
 async function buscarParceira(db: any, id: string) {
   const { data } = await db.from("parceiros").select("*").eq("id", id).maybeSingle();
-  if (!data) throw new Error("Parceira não encontrada.");
+  if (!data) throw new Error("Afiliado não encontrado.");
   return data;
 }
 
@@ -57,7 +57,7 @@ async function aprovar(db: any, b: any) {
   if (!camp) throw new Error("Escolha uma campanha ativa.");
 
   const { data: jaUsado } = await db.from("cupons").select("id").eq("codigo", codigo).maybeSingle();
-  if (jaUsado) throw new Error(`O código ${codigo} já é de outra parceira.`);
+  if (jaUsado) throw new Error(`O código ${codigo} já é de outro afiliado.`);
   if (await codigoExisteNaLoja(codigo)) throw new Error(`Já existe um cupom ${codigo} na Shopify. Escolha outro código.`);
 
   const idShopify = await criarCupom(codigo, Number(camp.desconto_pct));
@@ -70,7 +70,7 @@ async function aprovar(db: any, b: any) {
 
   const pct = (n: number) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
   const primeiro = esc(String(p.nome).split(" ")[0]);
-  const enviado = await enviarEmail(p.email, "Seu cadastro no Programa de Parceiros 99K foi aprovado", moldeEmail(
+  const enviado = await enviarEmail(p.email, "Seu cadastro no Programa de Afiliados 99K foi aprovado", moldeEmail(
     `${primeiro}, seu cupom está ativo`,
     `<p>Seu cadastro foi aprovado. O seu cupom já vale no site da 99K:</p>
      <p style="font-family:Georgia,serif;font-size:26px;letter-spacing:2px;background:#f3e9cc;color:#00261f;padding:12px 18px;border-radius:8px;display:inline-block">${codigo}</p>
@@ -84,9 +84,9 @@ async function recusar(db: any, b: any) {
   if (p.status !== "pendente") throw new Error("Este cadastro já foi analisado.");
   await db.from("parceiros").update({ status: "recusada" }).eq("id", p.id);
   const primeiro = esc(String(p.nome).split(" ")[0]);
-  const enviado = await enviarEmail(p.email, "Programa de Parceiros 99K", moldeEmail(
+  const enviado = await enviarEmail(p.email, "Programa de Afiliados 99K", moldeEmail(
     `${primeiro}, obrigado pelo interesse`,
-    `<p>Analisamos o seu cadastro e, neste momento, ele não foi aprovado para o Programa de Parceiros 99K.</p><p>Obrigado por querer divulgar a 99K.</p>`));
+    `<p>Analisamos o seu cadastro e, neste momento, ele não foi aprovado para o Programa de Afiliados 99K.</p><p>Obrigado por querer divulgar a 99K.</p>`));
   return { ok: true, email_enviado: enviado };
 }
 
@@ -106,7 +106,7 @@ async function encerrar(db: any, b: any) {
 
 async function pausar(db: any, b: any, pausarCupom: boolean) {
   const c = await cupomDa(db, b.parceiro_id);
-  if (!c) throw new Error("Esta parceira não tem cupom ativo.");
+  if (!c) throw new Error("Este afiliado não tem cupom ativo.");
   if (pausarCupom) await desativarCupom(c.shopify_discount_id);
   else await ativarCupom(c.shopify_discount_id);
   await db.from("cupons").update({ status: pausarCupom ? "pausado" : "ativo" }).eq("id", c.id);

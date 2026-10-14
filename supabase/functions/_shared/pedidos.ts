@@ -1,4 +1,4 @@
-// Regra de registro de um pedido com cupom de parceira.
+// Regra de registro de um pedido com cupom de afiliado.
 // Só guarda número do pedido, data, valor e cupom: nenhum dado da cliente.
 import { SupabaseClient } from "npm:@supabase/supabase-js@2";
 

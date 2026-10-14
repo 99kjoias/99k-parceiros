@@ -1,6 +1,6 @@
-# Programa de Parceiros 99K
+# Programa de Afiliados 99K
 
-Sistema próprio de parceiras (influenciadoras e afiliadas) da 99K Joias, no lugar da Adzy.
+Sistema próprio de afiliados (influenciadores e divulgadores) da 99K Joias, no lugar da Adzy.
 Endereço: https://parceiros.99kjoias.com.br
 
 ## Páginas (pasta `public/`, publicadas pelo Cloudflare Pages a cada mudança neste repositório)
@@ -8,9 +8,9 @@ Endereço: https://parceiros.99kjoias.com.br
 | Página | Para quem | O que faz |
 |---|---|---|
 | `index.html` | Público | Apresenta o programa e recebe o cadastro (dados, endereço, CPF, @, código desejado, coleção preferida, chave Pix, aceite das regras) |
-| `entrar.html` | Parceiras e lojista | Login, esqueci minha senha e nova senha |
-| `painel.html` | Parceira | Cupom, condições da campanha, vendas e comissão do mês em tempo real, meses fechados |
-| `admin.html` | Lojista | Fila de moderação, parceiras, vendas, fechamentos (marcar pago), campanhas, coleções do cadastro |
+| `entrar.html` | Afiliados e lojista | Login, esqueci minha senha e nova senha |
+| `painel.html` | Afiliado | Cupom, condições da campanha, vendas e comissão do mês em tempo real, meses fechados |
+| `admin.html` | Lojista | Fila de moderação, afiliados, vendas, fechamentos (marcar pago), campanhas, coleções do cadastro |
 
 ## Servidor (Supabase, projeto `99k-parceiros`, São Paulo)
 
@@ -36,3 +36,7 @@ Rotinas no banco (pg_cron): conferência de hora em hora (minuto 17) e fechament
 ## Segredos (configurados no painel do Supabase, nunca neste repositório)
 
 `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET` (app do Dev Dashboard da Shopify), e opcionais `RESEND_API_KEY`, `EMAIL_REMETENTE`, `EMAIL_AVISO_LOJISTA`.
+
+## Nomenclatura
+
+Nas telas e e-mails o nome é sempre **afiliado(s)** (decisão de Matheus, 14/10/2026). Os nomes internos do banco (tabela `parceiros`, coluna `parceiro_id`) e o endereço parceiros.99kjoias.com.br ficaram como estavam.

@@ -1,4 +1,4 @@
-// Utilidades comuns às funções do Programa de Parceiros 99K
+// Utilidades comuns às funções do Programa de Afiliados 99K
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 export const cors = {
@@ -42,7 +42,7 @@ export async function enviarEmail(para: string, assunto: string, html: string): 
 export function moldeEmail(titulo: string, corpo: string): string {
   return `<!doctype html><html><body style="margin:0;background:#f2f4f1;font-family:Arial,sans-serif;color:#10201b">
   <div style="max-width:520px;margin:0 auto;padding:28px 20px">
-    <div style="background:#00261f;color:#cfab52;padding:16px 20px;border-radius:10px 10px 0 0;font-family:Georgia,serif;font-size:20px">99K Parceiros</div>
+    <div style="background:#00261f;color:#cfab52;padding:16px 20px;border-radius:10px 10px 0 0;font-family:Georgia,serif;font-size:20px">99K Afiliados</div>
     <div style="background:#ffffff;padding:24px 20px;border-radius:0 0 10px 10px;border:1px solid #d6ddd9;border-top:0">
       <h1 style="font-family:Georgia,serif;font-size:22px;margin:0 0 14px">${titulo}</h1>
       ${corpo}
