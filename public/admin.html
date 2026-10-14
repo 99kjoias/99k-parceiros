@@ -379,7 +379,7 @@
   async function carregarVendas(silencioso) {
     const mes = $("mes-vendas").value || mesAtual();
     const meses = Array.from(new Set([mes, mesAtual()]));
-    const { data } = await sb.from("vendas").select("parceiro_id,cupom_codigo,pedido_numero,data_pedido,valor_base,comissao_valor,situacao,mes_ref").in("mes_ref", meses).order("data_pedido", { ascending: false });
+    const { data } = await sb.from("vendas").select("id,parceiro_id,cupom_codigo,pedido_numero,data_pedido,valor_base,comissao_valor,situacao,mes_ref,motivo_propria,fechamento_id").in("mes_ref", meses).order("data_pedido", { ascending: false });
     S.vendasMes = data || [];
     const doMes = S.vendasMes.filter((v) => v.mes_ref === mes);
     const val = doMes.filter((v) => v.situacao === "valida");
@@ -392,8 +392,20 @@
     const rank = Object.entries(porP).sort((a, b) => soma(b[1], "valor_base") - soma(a[1], "valor_base"));
     $("t-ranking").innerHTML = rank.length ? rank.map(([pid, vs]) => `<tr><td>${esc(parceira(pid)?.nome || "-")}</td><td>${esc(vs[0].cupom_codigo)}</td><td class="num">${vs.length}</td><td class="num">${brl.format(soma(vs, "valor_base"))}</td><td class="num">${brl.format(soma(vs, "comissao_valor"))}</td></tr>`).join("")
       : `<tr><td colspan="5" class="vazio">Nenhuma venda com cupom de afiliado neste mês.</td></tr>`;
-    $("t-vendas").innerHTML = doMes.length ? doMes.map((v) => `<tr class="${v.situacao === "cancelada" ? "cancelada" : ""}"><td>${dataHora.format(new Date(v.data_pedido))}</td><td>${esc(v.pedido_numero)}</td><td>${esc(v.cupom_codigo)}</td><td class="num">${brl.format(v.valor_base)}</td><td class="num">${brl.format(v.comissao_valor)}</td><td><span class="etiqueta et-${v.situacao}">${v.situacao === "cancelada" ? "Cancelado" : "Confirmado"}</span></td></tr>`).join("")
+    const situacaoVenda = (v) => {
+      if (v.situacao === "cancelada") return `<span class="etiqueta et-cancelada">Cancelado</span>`;
+      if (v.situacao === "propria") return `<span class="etiqueta et-propria">Compra do próprio afiliado, sem comissão</span><br><span class="small muted">${v.motivo_propria === "marcado pelo lojista" ? "marcado por vocês" : `mesmo ${esc(v.motivo_propria || "dado")} do cadastro`}</span>${!v.fechamento_id ? ` <button class="link propria" data-id="${v.id}" data-propria="0" type="button">contar comissão</button>` : ""}`;
+      return `<span class="etiqueta et-valida">Confirmado</span>${!v.fechamento_id ? ` <button class="link propria" data-id="${v.id}" data-propria="1" type="button">tirar comissão</button>` : ""}`;
+    };
+    $("t-vendas").innerHTML = doMes.length ? doMes.map((v) => `<tr class="${v.situacao === "cancelada" ? "cancelada" : ""}"><td>${dataHora.format(new Date(v.data_pedido))}</td><td>${esc(v.pedido_numero)}</td><td>${esc(v.cupom_codigo)}</td><td class="num">${brl.format(v.valor_base)}</td><td class="num">${v.situacao === "propria" ? "-" : brl.format(v.comissao_valor)}</td><td>${situacaoVenda(v)}</td></tr>`).join("")
       : `<tr><td colspan="6" class="vazio">Nenhum pedido neste mês.</td></tr>`;
+    $("t-vendas").querySelectorAll(".propria").forEach((b) => b.onclick = async () => {
+      const tirar = b.dataset.propria === "1";
+      if (await perguntar(tirar ? "Tirar a comissão deste pedido" : "Contar a comissão deste pedido",
+        tirar ? "<p>Use quando o pedido foi feito pelo próprio afiliado (ou alguém da casa) com o cupom dele. O pedido continua aparecendo, mas sem comissão e fora do ranking.</p>"
+              : "<p>O pedido volta a contar comissão e entra no ranking do afiliado.</p>", tirar ? "Tirar comissão" : "Contar comissão", tirar))
+        acao({ acao: "compra_propria", venda_id: b.dataset.id, propria: tirar }, tirar ? "Comissão retirada deste pedido." : "Comissão contada neste pedido.", b);
+    });
     if (silencioso !== true) desenharParceiras();
   }
 

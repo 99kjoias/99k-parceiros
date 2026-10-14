@@ -240,8 +240,8 @@
         <td>${dataCurta.format(new Date(v.data_pedido))}</td>
         <td>${esc(v.pedido_numero)}</td>
         <td class="num">${brl.format(v.valor_base)}</td>
-        <td class="num">${brl.format(v.comissao_valor)}</td>
-        <td><span class="etiqueta et-${v.situacao}">${v.situacao === "cancelada" ? "Cancelado" : "Confirmado"}</span></td>
+        <td class="num">${v.situacao === "propria" ? "-" : brl.format(v.comissao_valor)}</td>
+        <td><span class="etiqueta et-${v.situacao}">${v.situacao === "cancelada" ? "Cancelado" : v.situacao === "propria" ? "Compra própria, sem comissão" : "Confirmado"}</span></td>
       </tr>`).join("");
   }
 

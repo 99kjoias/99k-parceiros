@@ -2,6 +2,7 @@
 // Só guarda número do pedido, data, valor e cupom: nenhum dado da cliente.
 import { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { enviarEmail, moldeEmail, esc, SITE_PARCEIROS } from "./util.ts";
+import { gql } from "./shopify.ts";
 
 export type Pedido = {
   id: number;            // id numérico do pedido na Shopify
@@ -11,7 +12,11 @@ export type Pedido = {
   codigos: string[];     // cupons usados
   pago: boolean;         // pagamento aprovado
   canceladoEm: string | null;
+  contato?: Contato;     // dados de contato que vieram no aviso (reserva, se a leitura pela API falhar)
 };
+
+// Contato de quem comprou: usado só para comparar com o cadastro do afiliado, nunca é guardado.
+export type Contato = { emails: string[]; telefones: string[]; cpfs: string[]; enderecos: { cep: string; linha: string }[] };
 
 export async function registrarPedido(db: SupabaseClient, p: Pedido): Promise<string> {
   const codigos = p.codigos.map((c) => String(c).trim().toUpperCase()).filter(Boolean);
@@ -21,10 +26,13 @@ export async function registrarPedido(db: SupabaseClient, p: Pedido): Promise<st
   if (p.canceladoEm) {
     const { data } = await db.from("vendas")
       .update({ situacao: "cancelada", cancelado_em: p.canceladoEm })
-      .eq("shopify_order_id", p.id).eq("situacao", "valida").select("id");
+      .eq("shopify_order_id", p.id).in("situacao", ["valida", "propria"]).select("id");
     return data?.length ? "cancelado" : "cancelado sem registro";
   }
   if (!p.pago) return "não pago";
+
+  const { data: ja } = await db.from("vendas").select("id").eq("shopify_order_id", p.id).maybeSingle();
+  if (ja) return "já registrado";
 
   const { data: cupom } = await db.from("cupons")
     .select("id,codigo,parceiro_id,campanha_id,campanhas(comissao_pct)")
@@ -32,6 +40,8 @@ export async function registrarPedido(db: SupabaseClient, p: Pedido): Promise<st
   if (!cupom) return "cupom de fora do programa";
 
   const comissao = (cupom as any).campanhas?.comissao_pct ?? 0;
+  // Compra do próprio afiliado com o próprio cupom: fica registrada, sem comissão (decisão de Matheus, 14/10/2026)
+  const motivo = await compraPropria(db, cupom.parceiro_id, p);
   const { data, error } = await db.from("vendas").upsert({
     shopify_order_id: p.id,
     pedido_numero: p.numero,
@@ -44,12 +54,62 @@ export async function registrarPedido(db: SupabaseClient, p: Pedido): Promise<st
     comissao_valor: 0, // calculado no banco
     data_pedido: p.criadoEm,
     mes_ref: p.criadoEm.slice(0, 10), // recalculado no banco pelo horário de Brasília
+    situacao: motivo ? "propria" : "valida",
+    motivo_propria: motivo,
   }, { onConflict: "shopify_order_id", ignoreDuplicates: true }).select("parceiro_id,cupom_codigo,valor_base,comissao_valor,mes_ref,data_pedido");
   if (error) throw error;
   if (!data?.length) return "já registrado";
+  if (motivo) return "compra própria";
   // Aviso de venda por e-mail (só para quem aceitou). Falha no e-mail nunca atrapalha o registro.
   try { await avisarVenda(db, data[0]); } catch (_) { /* segue */ }
   return "registrado";
+}
+
+const dig = (s: unknown) => String(s ?? "").replace(/\D/g, "");
+
+// Lê pela API da Shopify o contato de quem comprou (e-mail, telefones, CPF e endereços)
+async function contatoDoPedido(id: number): Promise<Contato | null> {
+  try {
+    const d = await gql(`query($id: ID!) { order(id: $id) {
+      email phone
+      shippingAddress { zip address1 address2 phone }
+      billingAddress { zip address1 address2 phone }
+      localizedFields(first: 10) { nodes { key value } }
+    } }`, { id: `gid://shopify/Order/${id}` });
+    const o = d?.order;
+    if (!o) return null;
+    const ends = [o.shippingAddress, o.billingAddress].filter(Boolean);
+    return {
+      emails: [o.email].filter(Boolean),
+      telefones: [o.phone, ...ends.map((a: any) => a.phone)].filter(Boolean),
+      cpfs: (o.localizedFields?.nodes ?? []).map((n: any) => n.value).filter(Boolean),
+      enderecos: ends.map((a: any) => ({ cep: a.zip ?? "", linha: `${a.address1 ?? ""} ${a.address2 ?? ""}` })),
+    };
+  } catch (e) {
+    console.error("contato do pedido", id, String(e));
+    return null;
+  }
+}
+
+// Compara o pedido com o cadastro do afiliado. Devolve o motivo ("CPF", "e-mail", "telefone", "endereço") ou null.
+async function compraPropria(db: SupabaseClient, parceiroId: string, p: Pedido): Promise<string | null> {
+  const { data: af } = await db.from("parceiros").select("email,cpf,whatsapp,cep,numero").eq("id", parceiroId).maybeSingle();
+  if (!af) return null;
+  const c = (await contatoDoPedido(p.id)) ?? p.contato;
+  if (!c) return null;
+
+  if (c.cpfs.some((x) => dig(x).length === 11 && dig(x) === af.cpf)) return "CPF";
+  const email = String(af.email ?? "").trim().toLowerCase();
+  if (email && c.emails.some((x) => String(x).trim().toLowerCase() === email)) return "e-mail";
+  const zap = dig(af.whatsapp);
+  const mesmoTelefone = (t: string) => {
+    const d = dig(t).replace(/^55(?=\d{10,11}$)/, ""); // tira o +55
+    return d.length >= 10 && zap.length >= 10 && d.slice(-11) === zap.slice(-11);
+  };
+  if (c.telefones.some(mesmoTelefone)) return "telefone";
+  const numero = dig(af.numero);
+  if (numero && c.enderecos.some((e) => dig(e.cep) === af.cep && new RegExp(`(^|\\D)${numero}(\\D|$)`).test(e.linha))) return "endereço";
+  return null;
 }
 
 const brl = (n: number) => Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -89,6 +149,13 @@ export function pedidoDoWebhook(o: any): Pedido {
     codigos: (o.discount_codes ?? []).map((d: any) => d.code),
     pago: ["paid", "partially_refunded", "refunded"].includes(String(o.financial_status)),
     canceladoEm: o.cancelled_at ?? null,
+    contato: {
+      emails: [o.email, o.contact_email, o.customer?.email].filter(Boolean),
+      telefones: [o.phone, o.customer?.phone, o.shipping_address?.phone, o.billing_address?.phone].filter(Boolean),
+      cpfs: [],
+      enderecos: [o.shipping_address, o.billing_address].filter(Boolean)
+        .map((a: any) => ({ cep: a.zip ?? "", linha: `${a.address1 ?? ""} ${a.address2 ?? ""}` })),
+    },
   };
 }
 

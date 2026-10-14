@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
       case "mudar_campanha": return json(await mudarCampanha(db, b));
       case "salvar_campanha": return json(await salvarCampanha(db, b));
       case "marcar_pago": return json(await marcarPago(db, b));
+      case "compra_propria": return json(await compraPropria(db, b));
       case "colecao_visivel": {
         const { error } = await db.from("colecoes").update({ ativa: !!b.ativa }).eq("handle", String(b.handle));
         if (error) throw error;
@@ -190,6 +191,20 @@ async function salvarCampanha(db: any, b: any) {
   }
   if (falhas) throw new Error(`Campanha salva, mas ${falhas} cupom(ns) não foram atualizados na Shopify. Salve de novo para tentar outra vez.`);
   return { ok: true, cupons_atualizados: atualizados };
+}
+
+// Compra do próprio afiliado: tira ou devolve a comissão de um pedido de mês ainda não fechado.
+async function compraPropria(db: any, b: any) {
+  const { data: v } = await db.from("vendas").select("id,situacao,fechamento_id").eq("id", b.venda_id).maybeSingle();
+  if (!v) throw new Error("Pedido não encontrado.");
+  if (v.fechamento_id) throw new Error("Este pedido já entrou num fechamento e não pode mais mudar.");
+  if (v.situacao === "cancelada") throw new Error("Este pedido foi cancelado.");
+  const propria = !!b.propria;
+  const { error } = await db.from("vendas")
+    .update({ situacao: propria ? "propria" : "valida", motivo_propria: propria ? "marcado pelo lojista" : null })
+    .eq("id", v.id);
+  if (error) throw error;
+  return { ok: true };
 }
 
 // Pagamento do fechamento: "a pagar" ou "pagamento realizado", com o comprovante do Pix (PDF ou imagem).

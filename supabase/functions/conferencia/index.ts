@@ -9,8 +9,22 @@ import { pedidoDaApi, registrarPedido } from "../_shared/pedidos.ts";
 const URL_AVISOS = `${Deno.env.get("SUPABASE_URL")}/functions/v1/shopify-webhook`;
 const TOPICOS = ["ORDERS_PAID", "ORDERS_CANCELLED"];
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
   const db = adminDb();
+
+  // Teste de acesso aos dados de contato dos pedidos (usado para checar compra do próprio afiliado).
+  // Responde só se os campos vieram preenchidos, nunca os dados.
+  let corpo: any = {};
+  try { corpo = await req.json(); } catch (_) { /* chamada sem corpo */ }
+  if (corpo?.teste_contato && shopifyConfigurada()) {
+    try {
+      const d = await gql(`{ orders(first: 5, reverse: true) { nodes { email phone shippingAddress { zip address1 } localizedFields(first: 5) { nodes { key } } } } }`);
+      const ns = d.orders.nodes as any[];
+      return json({ ok: true, pedidos: ns.length, com_email: ns.filter((o) => o.email).length, com_telefone: ns.filter((o) => o.phone).length,
+        com_endereco: ns.filter((o) => o.shippingAddress?.zip && o.shippingAddress?.address1).length,
+        campos_locais: [...new Set(ns.flatMap((o) => (o.localizedFields?.nodes ?? []).map((n: any) => n.key)))] });
+    } catch (e) { return json({ ok: false, erro: String(e).slice(0, 400) }); }
+  }
 
   // No máximo uma rodada a cada 5 minutos, mesmo que alguém chame a função várias vezes
   const { data: ctl } = await db.from("controle").select("valor").eq("chave", "conferencia").maybeSingle();

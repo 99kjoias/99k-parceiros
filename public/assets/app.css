@@ -165,7 +165,7 @@ tr.cancelada td.num { text-decoration: line-through; }
 }
 .et-valida, .et-aprovada, .et-ativo, .et-pago { background: var(--verde-claro); color: var(--verde); }
 .et-cancelada, .et-recusada, .et-encerrada, .et-encerrado { background: var(--erro-fundo); color: var(--erro); }
-.et-pendente, .et-pausado, .et-apagar { background: var(--ouro-claro); color: #5c4710; }
+.et-pendente, .et-pausado, .et-apagar, .et-propria { background: var(--ouro-claro); color: #5c4710; }
 
 /* Números do painel */
 .numeros { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }

@@ -32,6 +32,7 @@ Rotinas no banco (pg_cron): conferência de hora em hora (minuto 17) e fechament
 - Comprovante do Pix: o lojista anexa no fechamento (pasta privada `comprovantes`, até 5 MB); o afiliado vê só os dele no painel.
 - Aviso de venda por e-mail: só para quem aceitou (na ativação ou no painel, em "Avisos por e-mail"); pedidos com mais de 3 dias achados pela conferência não geram aviso.
 - Afiliado recusado ou encerrado pode se cadastrar de novo e volta para a fila de análise.
+- Compra do próprio afiliado com o próprio cupom (mesmo CPF, e-mail, telefone ou CEP + número do cadastro): fica registrada como "propria", sem comissão e fora do ranking. O lojista pode tirar ou devolver a comissão de um pedido antes do fechamento. Os dados de contato do pedido só são comparados, nunca guardados.
 - Cupom combina com o desconto progressivo e não combina com outro cupom.
 - O sistema só calcula e mostra; o pagamento é feito por Matheus ou Isabelle.
 - Nenhum dado da cliente é guardado: só número do pedido, data, valor e cupom.
