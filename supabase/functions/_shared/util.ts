@@ -22,6 +22,8 @@ export function adminDb(): SupabaseClient {
   });
 }
 
+export const SITE_PARCEIROS = Deno.env.get("SITE_PARCEIROS") ?? "https://afiliados.99kjoias.com.br";
+
 // E-mail opcional: só envia se a chave do serviço de e-mail estiver configurada.
 export async function enviarEmail(para: string, assunto: string, html: string): Promise<boolean> {
   const chave = Deno.env.get("RESEND_API_KEY");
@@ -42,7 +44,12 @@ export async function enviarEmail(para: string, assunto: string, html: string): 
 export function moldeEmail(titulo: string, corpo: string): string {
   return `<!doctype html><html><body style="margin:0;background:#f2f4f1;font-family:Arial,sans-serif;color:#10201b">
   <div style="max-width:520px;margin:0 auto;padding:28px 20px">
-    <div style="background:#00261f;color:#cfab52;padding:16px 20px;border-radius:10px 10px 0 0;font-family:Karla,Arial,sans-serif;font-size:20px">99K Afiliados</div>
+    <div style="background:#00261f;padding:16px 20px;border-radius:10px 10px 0 0">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="vertical-align:middle"><img src="${SITE_PARCEIROS}/assets/logo-99k.png" alt="99K Joias" height="34" style="display:block;height:34px;width:auto;border:0"></td>
+        <td style="vertical-align:middle;padding-left:12px;color:#f3e9cc;font-family:Karla,Arial,sans-serif;font-size:15px;font-weight:bold;letter-spacing:.5px">Afiliados</td>
+      </tr></table>
+    </div>
     <div style="background:#ffffff;padding:24px 20px;border-radius:0 0 10px 10px;border:1px solid #d6ddd9;border-top:0">
       <h1 style="font-family:Karla,Arial,sans-serif;font-size:22px;margin:0 0 14px">${titulo}</h1>
       ${corpo}
@@ -50,7 +57,6 @@ export function moldeEmail(titulo: string, corpo: string): string {
   </div></body></html>`;
 }
 
-export const SITE_PARCEIROS = Deno.env.get("SITE_PARCEIROS") ?? "https://afiliados.99kjoias.com.br";
 
 export function esc(s: unknown): string {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
