@@ -31,7 +31,7 @@ export async function enviarEmail(para: string, assunto: string, html: string): 
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: de, to: [para], subject: assunto, html }),
+      body: JSON.stringify({ from: de, to: [para], subject: assunto, html, reply_to: Deno.env.get("EMAIL_RESPONDER") ?? "adm@99kjoias.com.br" }),
     });
     return r.ok;
   } catch (_) {
