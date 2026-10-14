@@ -25,7 +25,7 @@ export function adminDb(): SupabaseClient {
 // E-mail opcional: só envia se a chave do serviço de e-mail estiver configurada.
 export async function enviarEmail(para: string, assunto: string, html: string): Promise<boolean> {
   const chave = Deno.env.get("RESEND_API_KEY");
-  const de = Deno.env.get("EMAIL_REMETENTE") ?? "99K Joias <parceiros@99kjoias.com.br>";
+  const de = Deno.env.get("EMAIL_REMETENTE") ?? "99K Joias <afiliados@99kjoias.com.br>";
   if (!chave) return false;
   try {
     const r = await fetch("https://api.resend.com/emails", {
