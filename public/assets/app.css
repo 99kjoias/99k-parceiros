@@ -55,8 +55,9 @@ p { margin: 0 0 1em; }
   max-width: 1080px; margin: 0 auto; padding: 14px 16px;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
-.marca { font-family: var(--display); font-size: 1.25rem; color: #fff; text-decoration: none; letter-spacing: .02em; }
-.marca span { color: var(--ouro); }
+.marca { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
+.marca img { height: 30px; width: auto; display: block; }
+.marca span { color: var(--ouro-claro); font-family: var(--display); font-weight: 600; font-size: .95rem; letter-spacing: .04em; padding-left: 12px; border-left: 1px solid rgba(207,171,82,.45); line-height: 1.6; }
 .topo a.link-topo, .topo button.link-topo {
   color: #fff; background: none; border: 1px solid rgba(255,255,255,.35);
   padding: 7px 14px; border-radius: 999px; font: inherit; font-size: .9rem; cursor: pointer; text-decoration: none;
