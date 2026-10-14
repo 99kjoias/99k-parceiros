@@ -118,8 +118,10 @@ async function recusar(db: any, b: any) {
   await db.from("parceiros").update({ status: "recusada" }).eq("id", p.id);
   const primeiro = esc(String(p.nome).split(" ")[0]);
   const enviado = await enviarEmail(p.email, "Sobre o seu cadastro no Programa de Afiliados 99K", moldeEmail(
-    `${primeiro}, obrigado pelo interesse`,
-    `<p>Analisamos o seu cadastro e, neste momento, ele não foi aprovado para o Programa de Afiliados 99K.</p>`));
+    `${primeiro}, temos uma resposta sobre o seu cadastro`,
+    `<p>Olhamos o seu cadastro com carinho. Neste momento, não vamos seguir com ele no Programa de Afiliados 99K.</p>
+     <p>Isso não fecha a porta: o programa está sempre mudando, e você pode se cadastrar de novo quando quiser, pelo <a href="${SITE_PARCEIROS}" style="color:#004236">mesmo site</a>.</p>
+     <p>Equipe 99K JOIAS.</p>`));
   return { ok: true, email_enviado: enviado };
 }
 
