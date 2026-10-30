@@ -21,6 +21,7 @@ Funções em `supabase/functions`:
 - `shopify-webhook`: recebe da Shopify os avisos de pedido pago e cancelado.
 - `conferencia`: de hora em hora, liga os avisos da Shopify, relê os pedidos das últimas 72 horas e atualiza as coleções.
 - `niveis-avisos`: no dia 1, às 10h de Brasília, manda o e-mail de quem subiu (parabéns) ou desceu de nível.
+- `niveis-anuncio`: e-mail único de anúncio da escada aos afiliados (prévia, teste para adm@ e envio, protegido por token guardado no banco).
 
 Rotinas no banco (pg_cron): conferência de hora em hora (minuto 17) e fechamento do mês no dia 1, 00h05 de Brasília.
 

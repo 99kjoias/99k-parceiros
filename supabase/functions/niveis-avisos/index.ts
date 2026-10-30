@@ -65,7 +65,7 @@ Deno.serve(async () => {
          ${tabela(
            linha("Seu nível agora", novo.nome) +
            linha(`Sua comissão em ${mes}`, pct(novo.comissao_pct), true))}
-         <p>Para voltar ao nível ${ant?.nome ?? ""} (${pct(ant?.comissao_pct ?? 0)}) em ${mesSeg}, é só vender ${brl(ant?.minimo ?? 0)} em ${mes}. O nível cai no máximo um degrau por mês, e sobe direto para a faixa que você alcançar.</p>
+         <p>Para voltar ao nível ${ant?.nome ?? ""} (${pct(ant?.comissao_pct ?? 0)}) em ${mesSeg}, você precisa atingir ${brl(ant?.minimo ?? 0)} em vendas em ${mes}. O nível cai no máximo um degrau por mês, e sobe direto para a faixa que você alcançar.</p>
          ${botao}`);
     }
 
