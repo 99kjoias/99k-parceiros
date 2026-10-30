@@ -11,5 +11,5 @@ window.PARCEIROS_CONFIG = {
   supabaseKey: "sb_publishable_Fck50SbIbiLiQYosCO0_jQ_7PyhZZaQ",
   siteLoja: "https://99kjoias.com.br",
   emailContato: "adm@99kjoias.com.br",
-  versaoRegras: "v2-2026-10-14",
+  versaoRegras: "v3-2026-10-30",
 };

@@ -31,6 +31,21 @@
   .ordem { display: inline-flex; border: 1px solid var(--linha); border-radius: 999px; overflow: hidden; }
   .ordem button { font: inherit; font-size: .875rem; border: 0; background: var(--papel); color: var(--cinza); padding: 8px 14px; cursor: pointer; }
   .ordem button[aria-pressed="true"] { background: var(--verde); color: #fff; }
+  .nivel-caixa { background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); padding: 18px 20px; margin-bottom: 24px; }
+  .nivel-topo { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+  .nivel-topo h2 { margin: 0; font-size: 1.25rem; }
+  .nivel-topo .pct { font-family: var(--display); font-weight: 800; font-size: 1.6rem; color: var(--verde); }
+  .degraus { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 14px 0; }
+  .degrau { border: 1px solid var(--linha); border-radius: 10px; padding: 10px 8px; text-align: center; background: #fff; }
+  .degrau b { display: block; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .degrau span { display: block; font-size: .75rem; color: var(--cinza); }
+  .degrau.atual { background: var(--verde-fundo); border-color: var(--verde-fundo); color: #fff; }
+  .degrau.atual span { color: var(--ouro-claro); }
+  .degrau.previsto:not(.atual) { border: 2px dashed var(--ouro); }
+  .barra { height: 10px; background: var(--linha); border-radius: 999px; overflow: hidden; margin: 6px 0 10px; }
+  .barra i { display: block; height: 100%; background: var(--ouro); border-radius: 999px; }
+  .nivel-caixa p { margin: 6px 0; }
+  @media (max-width: 480px) { .degraus { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
 <body>
@@ -84,6 +99,12 @@
     </div>
 
     <div id="aba-meu">
+    <section class="nivel-caixa hidden" id="nivel" aria-labelledby="t-nivel">
+      <div class="nivel-topo"><h2 id="t-nivel">Seu nível</h2><span class="pct" id="nivel-pct"></span></div>
+      <div class="degraus" id="degraus"></div>
+      <div id="nivel-texto"></div>
+      <p class="small muted">O que você vende num mês define a sua comissão do mês seguinte, em todas as vendas. Você sobe direto para a faixa que alcançar. Se vender abaixo do seu nível, desce um nível por vez.</p>
+    </section>
     <div class="barra-acoes">
       <div class="campo">
         <label for="mes" class="sr">Mês</label>
@@ -134,7 +155,7 @@
 (function () {
   const { sb, brl, dataCurta, mesAtual, ultimosMeses, rotuloMes, esc, toast } = window.P;
   const $ = (id) => document.getElementById(id);
-  let eu = null;
+  let eu = null, campanhaAtual = null, niveis = [];
 
   $("sair").onclick = async () => { await sb.auth.signOut(); location.href = "entrar.html"; };
 
@@ -168,6 +189,7 @@
       $("cupom-pausado").classList.toggle("hidden", cupom.status === "ativo");
       $("copiar").onclick = async () => { try { await navigator.clipboard.writeText(cupom.codigo); toast("Código copiado."); } catch (_) { toast("Não deu para copiar. Selecione o código e copie."); } };
     }
+    campanhaAtual = camp;
     if (camp) $("condicoes").textContent = `Quem compra ganha ${fmtPct(camp.desconto_pct)} de desconto. Você recebe ${fmtPct(camp.comissao_pct)} de comissão.`;
 
     const av = $("avisar-vendas");
@@ -197,14 +219,14 @@
     });
     setInterval(() => { if (!$("aba-ranking").classList.contains("hidden")) carregarRanking(); }, 180000);
     $("painel").classList.remove("hidden");
-    await Promise.all([carregarMes(), carregarFechamentos()]);
+    await Promise.all([carregarMes(), carregarFechamentos(), carregarNivel()]);
 
     // Tempo real: qualquer venda nova ou mudança atualiza o painel
     sb.channel("minhas-vendas")
-      .on("postgres_changes", { event: "*", schema: "public", table: "vendas", filter: `parceiro_id=eq.${eu.id}` }, () => { carregarMes(); carregarFechamentos(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "vendas", filter: `parceiro_id=eq.${eu.id}` }, () => { carregarMes(); carregarFechamentos(); carregarNivel(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "fechamentos", filter: `parceiro_id=eq.${eu.id}` }, carregarFechamentos)
       .subscribe();
-    setInterval(carregarMes, 120000);
+    setInterval(() => { carregarMes(); carregarNivel(); }, 120000);
   }
 
   function mostrarEstado(titulo, texto, comFechamentos) {
@@ -220,6 +242,42 @@
       $("sec-avisos").classList.add("hidden");
       carregarFechamentos();
     }
+  }
+
+  // Escada de comissão (decisão de Matheus, 30/10/2026)
+  function mesSeguinte(iso) { const [a, m] = iso.split("-").map(Number); return m === 12 ? `${a + 1}-01-01` : `${a}-${String(m + 1).padStart(2, "0")}-01`; }
+  const nomeMes = (iso) => rotuloMes(iso).split(" ")[0].toLowerCase();
+  async function carregarNivel() {
+    if (!niveis.length) { const { data } = await sb.from("niveis").select("nivel,minimo,comissao_pct").order("nivel"); niveis = data || []; }
+    const { data } = await sb.rpc("meu_nivel");
+    const n = data && data[0];
+    if (!n || !niveis.length) return;
+    const caixa = $("nivel");
+    const prox = mesSeguinte(n.mes_ref);
+    const nivelMostrado = n.escada_ativa ? n.nivel : n.nivel_previsto;
+    $("t-nivel").textContent = n.escada_ativa ? `Seu nível em ${nomeMes(n.mes_ref)}: nível ${n.nivel}` : `Seu nível em ${nomeMes(prox)}: nível ${n.nivel_previsto}`;
+    $("nivel-pct").textContent = `${fmtPct(n.escada_ativa ? n.comissao_pct : n.pct_previsto)} de comissão`;
+    $("degraus").innerHTML = niveis.map((x, i) => {
+      const r = (v) => brl.format(v).replace(",00", "");
+      const faixa = Number(x.minimo) === 0 ? `até ${r(niveis[1].minimo)}` : (niveis[i + 1] ? `${r(x.minimo)} a ${r(niveis[i + 1].minimo)}` : `acima de ${r(x.minimo)}`);
+      const cls = [x.nivel === nivelMostrado ? "atual" : "", n.escada_ativa && x.nivel === n.nivel_previsto ? "previsto" : ""].join(" ");
+      return `<div class="degrau ${cls}"><span>Nível ${x.nivel}</span><b>${fmtPct(x.comissao_pct)}</b><span>${faixa}</span></div>`;
+    }).join("");
+    let t = "";
+    if (!n.escada_ativa) {
+      t += `<p>A escada de comissão começa em ${nomeMes(prox)}. Em ${nomeMes(n.mes_ref)} continua valendo a comissão da sua campanha${campanhaAtual ? ` (${fmtPct(campanhaAtual.comissao_pct)})` : ""}.</p>`;
+    } else {
+      const maior = niveis[niveis.length - 1];
+      const fatia = n.proximo_nivel ? Math.min(100, (Number(n.vendido_mes) / (Number(n.vendido_mes) + Number(n.falta_proximo))) * 100) : 100;
+      t += `<p>Vendido em ${nomeMes(n.mes_ref)}: <strong>${brl.format(n.vendido_mes)}</strong></p><div class="barra" aria-hidden="true"><i style="width:${fatia.toFixed(1)}%"></i></div>`;
+      t += n.proximo_nivel
+        ? `<p>Faltam <strong>${brl.format(n.falta_proximo)}</strong> em vendas para garantir o nível ${n.proximo_nivel} (${fmtPct(n.proximo_pct)}) em ${nomeMes(prox)}.</p>`
+        : `<p>Você já passou de ${brl.format(maior.minimo)} neste mês: o nível mais alto está garantido em ${nomeMes(prox)}.</p>`;
+      t += `<p class="small muted">Se o mês fechasse hoje, em ${nomeMes(prox)} você ficaria no nível ${n.nivel_previsto} (${fmtPct(n.pct_previsto)}).</p>`;
+    }
+    $("nivel-texto").innerHTML = t;
+    if (n.escada_ativa && campanhaAtual) $("condicoes").textContent = `Quem compra ganha ${fmtPct(campanhaAtual.desconto_pct)} de desconto. Sua comissão em ${nomeMes(n.mes_ref)}: ${fmtPct(n.comissao_pct)} (nível ${n.nivel}).`;
+    caixa.classList.remove("hidden");
   }
 
   async function carregarMes() {

@@ -68,7 +68,7 @@
         <span class="small muted">Vendas e comissão do mês atual</span>
       </div>
       <div class="tabela-wrap"><table>
-        <thead><tr><th>Afiliado</th><th>Cupom</th><th>Campanha</th><th class="num">Pedidos</th><th class="num">Vendas</th><th class="num">Comissão</th><th></th></tr></thead>
+        <thead><tr><th>Afiliado</th><th>Cupom</th><th>Campanha e nível</th><th class="num">Pedidos</th><th class="num">Vendas</th><th class="num">Comissão</th><th></th></tr></thead>
         <tbody id="t-parceiras"></tbody>
       </table></div>
     </section>
@@ -129,7 +129,7 @@
           <label><input type="checkbox" id="camp-padrao"> Campanha padrão na aprovação</label>
           <label><input type="checkbox" id="camp-ativa" checked> Ativa</label>
         </div>
-        <p class="small muted">Mudar o desconto atualiza na hora os cupons dos afiliados dessa campanha no site. Mudar a comissão vale para as vendas novas.</p>
+        <p class="small muted">Mudar o desconto atualiza na hora os cupons dos afiliados dessa campanha no site. Desde novembro de 2026 a comissão vem da escada de níveis (7%, 10%, 12% e 15%, pelo que o afiliado vendeu no mês anterior); o campo comissão da campanha vale só para as vendas até outubro.</p>
         <div class="acoes-linha">
           <button class="btn btn-primario" type="submit" id="camp-salvar">Salvar campanha</button>
           <button class="btn btn-linha hidden" type="button" id="camp-cancelar">Cancelar edição</button>
@@ -251,6 +251,8 @@
       sb.from("campanhas").select("*").order("criado_em"),
     ]);
     S.parceiros = p.data || []; S.cupons = c.data || []; S.campanhas = k.data || [];
+    const nv = await sb.rpc("niveis_afiliados");
+    S.niveis = nv.data || [];
     await carregarVendas(true);
     desenharFila(); desenharParceiras(); desenharCampanhas(); carregarFechamentos(); carregarColecoes();
     $("atualizado").textContent = "Atualizado às " + dataHora.format(new Date()).split(" ")[1];
@@ -325,6 +327,17 @@
     $("dlg-link").showModal();
   }
 
+  // Escada de comissão: nível do mês e previsão para o mês seguinte
+  function nivelHtml(id) {
+    const n = (S.niveis || []).find((x) => x.parceiro_id === id);
+    if (!n) return "";
+    const mesAt = mesAtual(), escada = mesAt >= "2026-11-01";
+    const seta = n.nivel_previsto > n.nivel ? "sobe" : n.nivel_previsto < n.nivel ? "desce" : "fica";
+    return escada
+      ? `<br><span class="small">Nível ${n.nivel} (${pct(n.comissao_pct)})</span><br><span class="small muted">Se fechasse hoje: ${seta === "fica" ? "fica no" : seta + " para o"} nível ${n.nivel_previsto} (${pct(n.pct_previsto)})</span>`
+      : `<br><span class="small muted">Novembro: nível ${n.nivel_previsto} (${pct(n.pct_previsto)})</span>`;
+  }
+
   // Parceiras
   function desenharParceiras() {
     const f = $("filtro-status").value;
@@ -340,7 +353,7 @@
       return `<tr data-id="${p.id}">
         <td><button class="link ver" type="button">${esc(p.nome)}</button><br><span class="small muted">@${esc(p.instagram)}</span></td>
         <td>${cp ? `<strong>${esc(cp.codigo)}</strong><br><span class="etiqueta et-${cp.status}">${cp.status === "ativo" ? "Ativo" : cp.status === "pausado" ? "Pausado" : "Encerrado"}</span>` : "-"}</td>
-        <td>${cam ? esc(cam.nome) : "-"}</td>
+        <td>${cam ? esc(cam.nome) : "-"}${nivelHtml(p.id)}</td>
         <td class="num">${vs.length}</td><td class="num">${brl.format(soma("valor_base"))}</td><td class="num">${brl.format(soma("comissao_valor"))}</td>
         <td>${p.status === "aprovada" && !p.ativado_em ? '<span class="etiqueta et-pendente">Aguardando ativação</span>' : `<span class="etiqueta et-${p.status}">${nomeStatus[p.status]}</span>`}</td>
       </tr>
