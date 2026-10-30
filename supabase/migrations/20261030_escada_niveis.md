@@ -19,3 +19,10 @@ Aplicado direto no projeto Supabase `99k-parceiros` (migrações `escada_niveis_
   vendas de outubro.
 - Função `niveis-avisos` + pg_cron `afiliados-niveis-avisos` (todo dia, 00h20 de Brasília): e-mail de
   parabéns na subida e aviso neutro na descida.
+
+## Ajustes de 30/10/2026, noite (migração `escada_nomes_e_campanhas`)
+
+- Níveis com nome (Matheus): Bronze (7%), Prata (10%), Ouro (12%), Diamante (15%). Coluna `niveis.nome`.
+- `campanhas.escada`: a escada vale só nas campanhas marcadas (Campanha padrão e Especial). Nas outras,
+  a venda segue com a comissão da campanha e o fechamento não mexe no nível.
+- E-mails de nível (`niveis-avisos`): só no dia 1, às 10h de Brasília (pg_cron `0 13 1 * *`).

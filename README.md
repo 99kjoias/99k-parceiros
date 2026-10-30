@@ -20,14 +20,14 @@ Funções em `supabase/functions`:
 - `admin`: ações do lojista (aprovar e criar o cupom na Shopify, recusar, pausar, encerrar, campanhas, marcar pago).
 - `shopify-webhook`: recebe da Shopify os avisos de pedido pago e cancelado.
 - `conferencia`: de hora em hora, liga os avisos da Shopify, relê os pedidos das últimas 72 horas e atualiza as coleções.
-- `niveis-avisos`: todo dia às 00h20 de Brasília, manda o e-mail de quem subiu (parabéns) ou desceu de nível.
+- `niveis-avisos`: no dia 1, às 10h de Brasília, manda o e-mail de quem subiu (parabéns) ou desceu de nível.
 
 Rotinas no banco (pg_cron): conferência de hora em hora (minuto 17) e fechamento do mês no dia 1, 00h05 de Brasília.
 
 ## Regras de negócio (decididas por Matheus em 14/10/2026)
 
 - Comissão sobre o valor pago pelas peças, depois de todos os descontos, sem frete.
-- Escada de comissão (Matheus, 30/10/2026), vale para as vendas a partir de novembro de 2026: 7% até R$1.500 no mês; 10% de R$1.500 a R$4.000; 12% de R$4.000 a R$8.000; 15% acima de R$8.000. O que o afiliado vende num mês define o nível do mês seguinte inteiro; sobe direto, desce um nível por vez; e-mail na subida e na descida. O desconto do cupom continua vindo da campanha. Detalhe em `supabase/migrations/20261030_escada_niveis.md`.
+- Escada de comissão (Matheus, 30/10/2026), só nas campanhas marcadas com escada (Campanha padrão e Especial), para as vendas a partir de novembro de 2026: Bronze 7% até R$1.500 no mês; Prata 10% de R$1.500 a R$4.000; Ouro 12% de R$4.000 a R$8.000; Diamante 15% acima de R$8.000. O que o afiliado vende num mês define o nível do mês seguinte inteiro; sobe direto, desce um nível por vez; e-mail na subida e na descida, no dia 1 às 10h. O desconto do cupom continua vindo da campanha. Detalhe em `supabase/migrations/20261030_escada_niveis.md`.
 - Só conta pedido pago. Cancelado sai; devolvido mantém a comissão.
 - Mês pelo horário de Brasília, pela data do pedido. Fecha no último dia.
 - Pedido de mês já fechado cancelado depois: desconta no fechamento seguinte, como ajuste.

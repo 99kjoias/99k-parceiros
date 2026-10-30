@@ -117,6 +117,25 @@
         <thead><tr><th>Campanha</th><th class="num">Desconto do cupom</th><th class="num">Comissão</th><th class="num">Afiliados</th><th>Situação</th><th></th></tr></thead>
         <tbody id="t-camp"></tbody>
       </table></div>
+      <div class="caixa" style="margin-bottom:24px">
+        <h2>Escada de comissão</h2>
+        <p class="small muted" style="margin-top:0">Vale nas campanhas marcadas como "Escada" (Campanha padrão e Especial), para as vendas a partir de novembro de 2026. Decidida por Matheus em 30/10/2026.</p>
+        <div class="tabela-wrap"><table>
+          <thead><tr><th>Nível</th><th>Vendas do afiliado no mês</th><th class="num">Comissão</th></tr></thead>
+          <tbody>
+            <tr><td>Bronze</td><td>até R$ 1.500</td><td class="num">7%</td></tr>
+            <tr><td>Prata</td><td>de R$ 1.500 a R$ 4.000</td><td class="num">10%</td></tr>
+            <tr><td>Ouro</td><td>de R$ 4.000 a R$ 8.000</td><td class="num">12%</td></tr>
+            <tr><td>Diamante</td><td>acima de R$ 8.000</td><td class="num">15%</td></tr>
+          </tbody>
+        </table></div>
+        <ul class="small" style="margin:12px 0 0;padding-left:18px">
+          <li>O que o afiliado vende num mês (valor pago pelas peças, sem frete; pedidos válidos) define o nível do mês seguinte, e a comissão do nível vale para todas as vendas desse mês.</li>
+          <li>Sobe direto para a faixa alcançada. Se vender abaixo do piso do nível dele, desce um nível só.</li>
+          <li>Muda sozinho no fechamento do dia 1, à meia-noite. O e-mail de quem subiu (parabéns) ou desceu sai no dia 1, às 10h.</li>
+          <li>O desconto do cupom continua sendo o da campanha. Nas campanhas sem escada, vale a comissão da campanha.</li>
+        </ul>
+      </div>
       <form class="caixa" id="f-camp">
         <h2 id="f-camp-titulo">Nova campanha</h2>
         <input type="hidden" id="camp-id">
@@ -129,7 +148,7 @@
           <label><input type="checkbox" id="camp-padrao"> Campanha padrão na aprovação</label>
           <label><input type="checkbox" id="camp-ativa" checked> Ativa</label>
         </div>
-        <p class="small muted">Mudar o desconto atualiza na hora os cupons dos afiliados dessa campanha no site. Desde novembro de 2026 a comissão vem da escada de níveis (7%, 10%, 12% e 15%, pelo que o afiliado vendeu no mês anterior); o campo comissão da campanha vale só para as vendas até outubro.</p>
+        <p class="small muted">Mudar o desconto atualiza na hora os cupons dos afiliados dessa campanha no site. Nas campanhas com escada (Campanha padrão e Especial), a comissão vem do nível do afiliado a partir de novembro de 2026; o campo comissão vale só para as vendas até outubro. Nas outras campanhas, vale o campo comissão.</p>
         <div class="acoes-linha">
           <button class="btn btn-primario" type="submit" id="camp-salvar">Salvar campanha</button>
           <button class="btn btn-linha hidden" type="button" id="camp-cancelar">Cancelar edição</button>
@@ -331,11 +350,12 @@
   function nivelHtml(id) {
     const n = (S.niveis || []).find((x) => x.parceiro_id === id);
     if (!n) return "";
-    const mesAt = mesAtual(), escada = mesAt >= "2026-11-01";
-    const seta = n.nivel_previsto > n.nivel ? "sobe" : n.nivel_previsto < n.nivel ? "desce" : "fica";
+    if (!n.na_escada) return `<br><span class="small muted">Sem escada: comissão da campanha</span>`;
+    const escada = mesAtual() >= "2026-11-01";
+    const seta = n.nivel_previsto > n.nivel ? "sobe para" : n.nivel_previsto < n.nivel ? "desce para" : "fica no";
     return escada
-      ? `<br><span class="small">Nível ${n.nivel} (${pct(n.comissao_pct)})</span><br><span class="small muted">Se fechasse hoje: ${seta === "fica" ? "fica no" : seta + " para o"} nível ${n.nivel_previsto} (${pct(n.pct_previsto)})</span>`
-      : `<br><span class="small muted">Novembro: nível ${n.nivel_previsto} (${pct(n.pct_previsto)})</span>`;
+      ? `<br><span class="small">Nível ${esc(n.nome_nivel)} (${pct(n.comissao_pct)})</span><br><span class="small muted">Se fechasse hoje: ${seta} ${esc(n.nome_previsto)} (${pct(n.pct_previsto)})</span>`
+      : `<br><span class="small muted">Novembro: ${esc(n.nome_previsto)} (${pct(n.pct_previsto)})</span>`;
   }
 
   // Parceiras
@@ -507,7 +527,7 @@
     if (!S.campanhas.length) { tb.innerHTML = `<tr><td colspan="6" class="vazio">Nenhuma campanha ainda. Crie a primeira abaixo.</td></tr>`; }
     else tb.innerHTML = S.campanhas.map((c) => `<tr>
       <td><strong>${esc(c.nome)}</strong>${c.padrao ? ' <span class="etiqueta et-pendente">Padrão</span>' : ""}</td>
-      <td class="num">${pct(c.desconto_pct)}</td><td class="num">${pct(c.comissao_pct)}</td>
+      <td class="num">${pct(c.desconto_pct)}</td><td class="num">${c.escada ? "Escada<br><span class=\"small muted\">7% a 15%</span>" : pct(c.comissao_pct)}</td>
       <td class="num">${S.parceiros.filter((p) => p.campanha_id === c.id && p.status === "aprovada").length}</td>
       <td><span class="etiqueta et-${c.ativa ? "ativo" : "encerrado"}">${c.ativa ? "Ativa" : "Inativa"}</span></td>
       <td><button class="link editar" data-id="${c.id}" type="button">Editar</button></td></tr>`).join("");

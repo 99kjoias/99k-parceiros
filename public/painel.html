@@ -248,20 +248,20 @@
   function mesSeguinte(iso) { const [a, m] = iso.split("-").map(Number); return m === 12 ? `${a + 1}-01-01` : `${a}-${String(m + 1).padStart(2, "0")}-01`; }
   const nomeMes = (iso) => rotuloMes(iso).split(" ")[0].toLowerCase();
   async function carregarNivel() {
-    if (!niveis.length) { const { data } = await sb.from("niveis").select("nivel,minimo,comissao_pct").order("nivel"); niveis = data || []; }
+    if (!niveis.length) { const { data } = await sb.from("niveis").select("nivel,nome,minimo,comissao_pct").order("nivel"); niveis = data || []; }
     const { data } = await sb.rpc("meu_nivel");
     const n = data && data[0];
-    if (!n || !niveis.length) return;
     const caixa = $("nivel");
+    if (!n || !niveis.length || !n.na_escada) { caixa.classList.add("hidden"); return; }
     const prox = mesSeguinte(n.mes_ref);
     const nivelMostrado = n.escada_ativa ? n.nivel : n.nivel_previsto;
-    $("t-nivel").textContent = n.escada_ativa ? `Seu nível em ${nomeMes(n.mes_ref)}: nível ${n.nivel}` : `Seu nível em ${nomeMes(prox)}: nível ${n.nivel_previsto}`;
+    $("t-nivel").textContent = n.escada_ativa ? `Seu nível em ${nomeMes(n.mes_ref)}: ${n.nome_nivel}` : `Seu nível em ${nomeMes(prox)}: ${n.nome_previsto}`;
     $("nivel-pct").textContent = `${fmtPct(n.escada_ativa ? n.comissao_pct : n.pct_previsto)} de comissão`;
     $("degraus").innerHTML = niveis.map((x, i) => {
       const r = (v) => brl.format(v).replace(",00", "");
       const faixa = Number(x.minimo) === 0 ? `até ${r(niveis[1].minimo)}` : (niveis[i + 1] ? `${r(x.minimo)} a ${r(niveis[i + 1].minimo)}` : `acima de ${r(x.minimo)}`);
       const cls = [x.nivel === nivelMostrado ? "atual" : "", n.escada_ativa && x.nivel === n.nivel_previsto ? "previsto" : ""].join(" ");
-      return `<div class="degrau ${cls}"><span>Nível ${x.nivel}</span><b>${fmtPct(x.comissao_pct)}</b><span>${faixa}</span></div>`;
+      return `<div class="degrau ${cls}"><span>${esc(x.nome)}</span><b>${fmtPct(x.comissao_pct)}</b><span>${faixa}</span></div>`;
     }).join("");
     let t = "";
     if (!n.escada_ativa) {
@@ -271,12 +271,12 @@
       const fatia = n.proximo_nivel ? Math.min(100, (Number(n.vendido_mes) / (Number(n.vendido_mes) + Number(n.falta_proximo))) * 100) : 100;
       t += `<p>Vendido em ${nomeMes(n.mes_ref)}: <strong>${brl.format(n.vendido_mes)}</strong></p><div class="barra" aria-hidden="true"><i style="width:${fatia.toFixed(1)}%"></i></div>`;
       t += n.proximo_nivel
-        ? `<p>Faltam <strong>${brl.format(n.falta_proximo)}</strong> em vendas para garantir o nível ${n.proximo_nivel} (${fmtPct(n.proximo_pct)}) em ${nomeMes(prox)}.</p>`
-        : `<p>Você já passou de ${brl.format(maior.minimo)} neste mês: o nível mais alto está garantido em ${nomeMes(prox)}.</p>`;
-      t += `<p class="small muted">Se o mês fechasse hoje, em ${nomeMes(prox)} você ficaria no nível ${n.nivel_previsto} (${fmtPct(n.pct_previsto)}).</p>`;
+        ? `<p>Faltam <strong>${brl.format(n.falta_proximo)}</strong> em vendas para garantir o nível ${n.proximo_nome} (${fmtPct(n.proximo_pct)}) em ${nomeMes(prox)}.</p>`
+        : `<p>Você já passou de ${brl.format(maior.minimo)} neste mês: o nível Diamante está garantido em ${nomeMes(prox)}.</p>`;
+      t += `<p class="small muted">Se o mês fechasse hoje, em ${nomeMes(prox)} você ficaria no nível ${n.nome_previsto} (${fmtPct(n.pct_previsto)}).</p>`;
     }
     $("nivel-texto").innerHTML = t;
-    if (n.escada_ativa && campanhaAtual) $("condicoes").textContent = `Quem compra ganha ${fmtPct(campanhaAtual.desconto_pct)} de desconto. Sua comissão em ${nomeMes(n.mes_ref)}: ${fmtPct(n.comissao_pct)} (nível ${n.nivel}).`;
+    if (n.escada_ativa && campanhaAtual) $("condicoes").textContent = `Quem compra ganha ${fmtPct(campanhaAtual.desconto_pct)} de desconto. Sua comissão em ${nomeMes(n.mes_ref)}: ${fmtPct(n.comissao_pct)} (nível ${n.nome_nivel}).`;
     caixa.classList.remove("hidden");
   }
 

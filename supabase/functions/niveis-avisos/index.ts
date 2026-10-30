@@ -1,5 +1,6 @@
 // Escada de comissão dos afiliados: avisa por e-mail quem subiu ou desceu de nível.
-// Roda todo dia (00h20 de Brasília, pg_cron "afiliados-niveis-avisos"); só manda o que ainda não foi enviado.
+// Roda no dia 1, às 10h de Brasília (pg_cron "afiliados-niveis-avisos"); só manda o que ainda não foi enviado.
+// Níveis: Bronze, Prata, Ouro e Diamante (Matheus, 30/10/2026).
 // Nenhum dado de cliente. Publicada no Supabase com o util.ts ao lado (import "./util.ts").
 import { adminDb, enviarEmail, moldeEmail, esc, json, SITE_PARCEIROS } from "../_shared/util.ts";
 
@@ -23,7 +24,7 @@ Deno.serve(async () => {
   const hoje = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
   const mesAtual = hoje.slice(0, 8) + "01";
 
-  const { data: niveis } = await db.from("niveis").select("nivel,minimo,comissao_pct").order("nivel");
+  const { data: niveis } = await db.from("niveis").select("nivel,nome,minimo,comissao_pct").order("nivel");
   const nv = new Map((niveis ?? []).map((n: any) => [n.nivel, n]));
 
   const { data: pend, error } = await db.from("parceiro_nivel_mes")
@@ -46,13 +47,13 @@ Deno.serve(async () => {
     if (m.mudanca === "subiu") {
       const prox: any = nv.get(m.nivel + 1);
       const proximo = prox
-        ? `<p>Próximo degrau: vendendo ${brl(prox.minimo)} em ${mes}, você vai para o nível ${prox.nivel} e ganha ${pct(prox.comissao_pct)} em ${mesSeg}.</p>`
+        ? `<p>Próximo degrau: vendendo ${brl(prox.minimo)} em ${mes}, você vai para o nível ${prox.nome} e ganha ${pct(prox.comissao_pct)} em ${mesSeg}.</p>`
         : `<p>Você chegou ao nível mais alto do programa. Para continuar nele, é só manter as vendas acima de ${brl(novo.minimo)} por mês.</p>`;
-      assunto = `Parabéns, ${primeiro}! Você subiu para o nível ${m.nivel}`;
+      assunto = `Parabéns, ${primeiro}! Você subiu para o nível ${novo.nome}`;
       html = moldeEmail(`Parabéns, ${primeiro}! Você subiu de nível`,
-        `<p>Em ${mesAnt} você vendeu <strong>${brl(m.faturamento_mes_anterior)}</strong> com o seu cupom e subiu para o <strong>nível ${m.nivel}</strong>.</p>
+        `<p>Em ${mesAnt} você vendeu <strong>${brl(m.faturamento_mes_anterior)}</strong> com o seu cupom e subiu para o <strong>nível ${novo.nome}</strong>.</p>
          ${tabela(
-           linha("Nível anterior", `Nível ${m.nivel_anterior} (${pct(ant?.comissao_pct ?? 0)})`) +
+           linha("Nível anterior", `${ant?.nome ?? ""} (${pct(ant?.comissao_pct ?? 0)})`) +
            linha(`Sua comissão em ${mes}`, pct(novo.comissao_pct), true))}
          <p>A comissão nova vale para todas as vendas de ${mes}.</p>
          ${proximo}
@@ -60,11 +61,11 @@ Deno.serve(async () => {
     } else {
       assunto = `Seu nível de comissão em ${mes}`;
       html = moldeEmail(`${primeiro}, seu nível em ${mes}`,
-        `<p>Em ${mesAnt} as vendas com o seu cupom somaram <strong>${brl(m.faturamento_mes_anterior)}</strong>, abaixo dos ${brl(ant?.minimo ?? 0)} do nível ${m.nivel_anterior}.</p>
+        `<p>Em ${mesAnt} as vendas com o seu cupom somaram <strong>${brl(m.faturamento_mes_anterior)}</strong>, abaixo dos ${brl(ant?.minimo ?? 0)} do nível ${ant?.nome ?? ""}.</p>
          ${tabela(
-           linha("Seu nível agora", `Nível ${m.nivel}`) +
+           linha("Seu nível agora", novo.nome) +
            linha(`Sua comissão em ${mes}`, pct(novo.comissao_pct), true))}
-         <p>Para voltar aos ${pct(ant?.comissao_pct ?? 0)} em ${mesSeg}, é só vender ${brl(ant?.minimo ?? 0)} em ${mes}. O nível cai no máximo um degrau por mês, e sobe direto para a faixa que você alcançar.</p>
+         <p>Para voltar ao nível ${ant?.nome ?? ""} (${pct(ant?.comissao_pct ?? 0)}) em ${mesSeg}, é só vender ${brl(ant?.minimo ?? 0)} em ${mes}. O nível cai no máximo um degrau por mês, e sobe direto para a faixa que você alcançar.</p>
          ${botao}`);
     }
 
